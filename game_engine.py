@@ -6,9 +6,10 @@ import tkinter as tk
 from math import pi, sin, cos, e, sqrt, floor, ceil
 from random import random, randint, choice
 from time import perf_counter, sleep
-from os import chdir
 from pickle import *
+
 import subprocess
+import pyautogui
 
 clock = perf_counter
 
@@ -33,6 +34,9 @@ class Sound:
         sound.stream = sound.PA.open(**sound.kwargs)
 
         sound.on = False
+        sound.in_loop = False
+
+        sound.open = True
 
     def play(sound):
         thread.start_new(sound.__play, ())
@@ -46,10 +50,24 @@ class Sound:
     def stop(sound):
         sound.on = False
         sound.file.rewind()
-    
+
+    def loop(sound):
+        if not sound.in_loop:
+            thread.start_new(sound.__loop, ())
+
+    def __loop(sound):
+        sound.in_loop = True
+        while sound.in_loop:
+            sound.__play()
+     
     def close(sound):
+        if sound.in_loop: sound.in_loop = False
+        if sound.on: sound.on = False
+        
         sound.stream.stop_stream()
+        sound.file.close()
+
+        sound.open = False
 
 ## Get screen size
-import pyautogui
 w, h = pyautogui.size()

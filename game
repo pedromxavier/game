@@ -3,6 +3,10 @@ from game_engine import *
 
 class Game:
 
+    EXPAND = dict(expand=True, fill='both')
+
+    INTRO_LAPSE = 2.0
+
     def __init__(game):
         ## Tk screen settings
         game.root = tk.Tk()
@@ -11,71 +15,64 @@ class Game:
         game.root.configure(background='black')
 
         game.images = {
-            'title' : tk.PhotoImage(master=game.root, file='title.gif')
-            'play' : tk.PhotoImage(master=menu.root,file='play.gif')
-            'exit' : tk.PhotoImage(master=menu.root,file='exit.gif')
-            'rank' : tk.PhotoImage(master=menu.root,file='ranking.gif')
-            'back' : tk.PhotoImage(master=menu.root,file='back_to_menu.gif')
-            'controls' : tk.PhotoImage(master=menu.root,file='controls.gif')
-            'intro' : tk.PhotoImage(master=menu.root,file='intro.gif')
+            'title' : tk.PhotoImage(master=game.root, file='data/title.gif')
+            'play' : tk.PhotoImage(master=menu.root,file='data/play.gif')
+            'exit' : tk.PhotoImage(master=menu.root,file='data/exit.gif')
+            'rank' : tk.PhotoImage(master=menu.root,file='data/rank.gif')
+            'back' : tk.PhotoImage(master=menu.root,file='data/back_to_menu.gif')
+            'controls' : tk.PhotoImage(master=menu.root,file='data/controls.gif')
+            'intro' : tk.PhotoImage(master=menu.root,file='data/intro.gif')
         }
 
+        game.sounds = {
+            'main_theme' : Sound('data/main_theme.wav'),
+            'blaster' : Sound('data/blaster.wav'),
+            'tie_blaster' : Sound('data/tie_blaster.wav'),
+            'explosion' : Sound('data/explosion.wav'),
+        }
 
-class Menu:
+        game.intro = Label(game.root, image=game.images['intro'], bd=0)
 
-    def __init__(menu):
-        
+        game.menu = Frame(game.root)
+    
+        game.menu_title = Label(game.menu, bg='black',image=game.images['title'],height=210,bd=0)
+        game.menu_title.pack(side='top')
+    
+        game.menu_play = Label(game.menu, bg='black', game.images['play'],height=90,bd=0)
+        game.menu_play.pack()
+        game.menu_play.bind("<Button-1>", game.menu_play_func)
+    
+        game.menu_rank = Label(game.menu, image=game.images['rank'],height=90,bg='black',bd=0)
+        game.menu_rank.pack()
+        game.menu_rank.bind("<Button-1>", game.menu_rank_func)
+    
+        game.menu_exit = Label(game.menu, bg='black', image=game.images['exit'],height=90,bd=0)
+        game.menu_exit.pack()
+        game.menu_exit.bind("<Button-1>", game.menu_exit_func)
+    
+        game.menu_back = Label(game.menu, bg='black', image=game.images['back'],height=150,bd=0)
+        game.menu_back.pack_forget()
+        game.menu_back.bind("<Button-1>", game.menu_back_func)
+    
+        game.menu_controls = Label(game.menu, image=game.images['controls'],bd=0)
+        game.menu_controls.pack(side='bottom')
+    
+        game.game = Frame(game.root)
 
-        
-        menu.introduce()
-        menu.root.after(3500, menu.mount)
+    def start(game):
+        ## Show Intro Image
+        game.intro.pack(anchor='center')
 
-        menu.ranking = Ranking()
+        ## Start playing main theme
+        game.sounds['intro'].loop()
 
-        menu.root.mainloop()
+        sleep(game.INTRO_LAPSE)
 
-    def introduce(menu):
+        ## Switch to menu
+        game.intro.pack_forget()
+        game.menu.pack(**game.EXPAND)
 
-        menu.Intro = Label(menu.root,image=menu.INTRO_img,bd=0)
-        menu.Intro.pack(anchor='center')
 
-        if thread._count() < 2:
-            thread.start_new_thread(menu._PlayTheme,())
-
-    def _PlayTheme(menu):
-        play_sound()
-
-        
-    def mount(menu):
-
-        menu.Intro.pack_forget()
-
-        "<><><><><><><><><><>"
-        menu.TITLE_lbl = Label(menu.root,bg='black',image=menu.TITLE_img,height=210,bd=0)
-        menu.TITLE_lbl.pack(side='top')
-        "<><><><><><><><><><>"
-#        menu.BUTTON_FRAME = Frame(menu.root, height=50, bg='black')
-#        menu.BUTTON_FRAME.pack()
-        "<><><><><><><><><><>"
-        menu.PLAY_btn = Label(menu.root,bg='black', image=menu.PLAY_img,height=90,bd=0)
-        menu.PLAY_btn.pack()
-        menu.PLAY_btn.bind("<ButtonPress-1><ButtonRelease-1>", menu._play)
-        "<><><><><><><><><><>"
-        menu.RANK_btn = Label(menu.root, image=menu.RANK_img,height=90,bg='black',bd=0)
-        menu.RANK_btn.pack()
-        menu.RANK_btn.bind("<ButtonPress-1><ButtonRelease-1>", menu._rank)
-        "<><><><><><><><><><>"
-        menu.EXIT_btn = Label(menu.root, bg='black', image=menu.EXIT_img,height=90,bd=0)
-        menu.EXIT_btn.pack()
-        menu.EXIT_btn.bind("<ButtonPress-1><ButtonRelease-1>", menu._exit)
-        "<><><><><><><><><><>"
-        menu.BACK_btn = Label(menu.root, bg='black', image = menu.BACK_img,height=150,bd=0)
-        menu.BACK_btn.pack_forget()
-        menu.BACK_btn.bind("<ButtonPress-1><ButtonRelease-1>", menu._back)
-        "<><><><><><><><><><>"
-        menu.CNTRLS_lbl = Label(menu.root, image=menu.CNTRLS_img,bd=0)
-        menu.CNTRLS_lbl.pack(side='bottom')
-        "<><><><><><><><><><>"
 
     def _play(menu, event):
         menu.root.destroy()
