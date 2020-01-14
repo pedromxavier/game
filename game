@@ -1,11 +1,15 @@
 #!/usr/bin/python3.8
-from game_engine import *
+from engine import *
 
 class Game:
 
     EXPAND = dict(expand=True, fill='both')
 
     INTRO_LAPSE = 2.0
+
+    W, H = pyautogui.size()
+
+    BG = r"#000000"
 
     def __init__(game):
         ## Tk screen settings
@@ -50,14 +54,52 @@ class Game:
         game.menu_exit.pack()
         game.menu_exit.bind("<Button-1>", game.menu_exit_func)
     
-        game.menu_back = Label(game.menu, bg='black', image=game.images['back'],height=150,bd=0)
-        game.menu_back.pack_forget()
-        game.menu_back.bind("<Button-1>", game.menu_back_func)
-    
         game.menu_controls = Label(game.menu, image=game.images['controls'],bd=0)
         game.menu_controls.pack(side='bottom')
+
+        game.rank = Frame(game.root)
+
+        game.rank_rank = Label(game.rank, bg='black',height=500,width=100)
+        game.rank_rank.pack(side='top')
+
+        game.rank_back = Label(game.rank, bg='black', image=game.images['back'],height=150,bd=0)
+        game.rank_back.pack()
+        game.rank_back.bind("<Button-1>", game.rank_back_func)
     
         game.game = Frame(game.root)
+
+        game.canvas = Canvas(game.game, width=game.W, height=game.H, bg=game.BG)
+        game.canvas.pack(**game.EXPAND)
+
+        game.score = Label(game.game)
+
+        game.root.mainloop()
+
+    def menu_play_func(game):
+        ## Switch from Menu to Canvas
+        game.menu.pack_forget()
+        game.game.pack(**game.EXPAND)
+
+        ## Start game
+        game.play()
+
+    def menu_exit_func(game):
+        ## Close Sounds
+        for sound in game.sounds.values():
+            sound.close()
+
+        ## Close Screen
+        game.root.destroy()
+    
+    def menu_rank_func(game):
+        ## Switch to ranking
+        game.menu.pack_forget()
+        game.rank.pack()
+    
+    def rank_back_func(game):
+        ## Switch back to menu
+        game.rank.pack_forget()
+        game.menu.pack()
 
     def start(game):
         ## Show Intro Image
@@ -72,83 +114,9 @@ class Game:
         game.intro.pack_forget()
         game.menu.pack(**game.EXPAND)
 
-
-
-    def _play(menu, event):
-        menu.root.destroy()
-        fase = Fase(menu,w,h)
-
-    def _exit(menu, event):
-        menu.root.destroy()
-        
-    def _rank(menu, event):
-#        menu.BUTTON_FRAME.pack_forget()
-        menu.PLAY_btn.pack_forget()
-        menu.RANK_btn.pack_forget()
-        menu.EXIT_btn.pack_forget()
-        menu.CNTRLS_lbl.pack_forget()
-        menu.BACK_btn.pack(side='bottom')
-        menu.RECORDS = []
-        menu.LABELS = Frame(menu.root,bg='black')
-        menu.LABELS.pack()
-
-        _format = "%5s -- %8d -- %2d/%2d/%2d\n"
-
-        for name,pts,date in menu.ranking.list:
-            record = (name,pts,date[0],date[1],date[2])
-            label = Label(menu.LABELS, text=_format%record, bg='black',fg='white')
-            label.pack()
-            menu.RECORDS += [label]
-
-    def _back(menu, event):
-#        menu.BUTTON_FRAME.pack()
-        menu.PLAY_btn.pack()
-        menu.RANK_btn.pack()
-        menu.EXIT_btn.pack()
-        menu.CNTRLS_lbl.pack(side='bottom')
-        menu.LABELS.pack_forget()
-        menu.BACK_btn.pack_forget()
-        
-class Ranking(object):
-    """
-    O Ranking tem tuplas contendo:
-    [ (nome, pontuacaoo, *data) ... ]
-    """
-    def __init__(rank):
-        td = dt.datetime.today()
-        rank.today = td.day, td.month, td.year
-        del td
-        
-        try:
-            _file = open("rank.dt","rb")
-            rank.list = load(_file)
-            _file.close()
-        except:
-            _file = open("rank.dt","wb").close()
-            rank.list = list()
+    def play(game):
+        ...
             
-    def save(rank):
-        "======================"
-        _file = open("rank.dt","wb")
-        dump(rank.list, _file)
-        _file.close()
-        "======================"
-
-    def update(rank, name, pts):
-        "======================"
-        rank.list += [(name, pts, tuple(i for i in rank.today))]
-
-        rank.list  = sorted(rank.list, key=lambda _tuple: _tuple[1],reverse=True)[:10]
-        "======================"
-        
-    def __repr__(rank):
-        
-        string  = str()
-        _format = "%5s -- %8d -- %2d/%2d/%2d\n"
-        for name, pts, date in rank.list:
-            string += _format %(name, pts, date[0], date[1], date[2])
-        return string
-    
 class Fase:
 
     def __init__(fase, menu, *mapa):
@@ -232,8 +200,6 @@ class Fase:
         fase.cosmos.Space.move(fighter, dx, dy)
 
 class Universe:
-
-    msgs = {'gameover':u"Voce perdeu. \n(otario)",}
 
     def __init__(self, toplvl, x, y, menu):
 

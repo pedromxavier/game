@@ -36,8 +36,6 @@ class Sound:
         sound.on = False
         sound.in_loop = False
 
-        sound.open = True
-
     def play(sound):
         thread.start_new(sound.__play, ())
 
@@ -67,7 +65,38 @@ class Sound:
         sound.stream.stop_stream()
         sound.file.close()
 
-        sound.open = False
+class Object(object):
+    """ Used to define a game object, such as spacecraft or meteors.
+    """
+    def __init__(obj, canvas, image, x=None, y=None):
+        obj.canvas = canvas
 
-## Get screen size
-w, h = pyautogui.size()
+        obj.w = image.width()
+        obj.h = image.height()
+
+        obj.key = obj.canvas.create_image(x, y, image)
+
+    def __or__(A, B):
+        """ Check collision between A and B:
+            A | B -> {True, False}
+        """
+        ...
+
+    @property
+    def xy(obj):
+        return obj.canvas.coords(obj.key)
+
+    @property
+    def x(obj):
+        return obj.xy[0]
+    
+    @property
+    def y(obj):
+        return obj.xy[1]
+    
+
+    @property
+    def box(obj):
+        """ (x_min, y_min, x_max, y_max)
+        """
+        return (obj.x)
