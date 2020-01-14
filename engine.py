@@ -76,11 +76,13 @@ class Object(object):
 
         obj.key = obj.canvas.create_image(x, y, image)
 
-    def __or__(A, B):
+    def __and__(A, B):
         """ Check collision between A and B:
-            A | B -> {True, False}
+            A & B -> {True, False}
         """
-        ...
+        ax, ay, aX, aY = A.box
+        bx, by, bX, bY = B.box
+        return not ((ax > bX or aX < bx) or (ay > bY or aY < by))
 
     @property
     def xy(obj):
@@ -94,9 +96,10 @@ class Object(object):
     def y(obj):
         return obj.xy[1]
     
-
     @property
     def box(obj):
         """ (x_min, y_min, x_max, y_max)
         """
-        return (obj.x)
+        x, y = obj.xy
+        w, h = obj.w, obj.h
+        return int(x-w/2), int(y-h/2), int(x+w/2), int(y+h/2)
