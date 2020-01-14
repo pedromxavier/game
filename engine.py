@@ -7,6 +7,7 @@ from math import pi, sin, cos, e, sqrt, floor, ceil
 from random import random, randint, choice
 from time import perf_counter, sleep
 from pickle import *
+from PIL import Image, ImageTk
 
 import subprocess
 import pyautogui
@@ -65,25 +66,15 @@ class Sound:
         sound.stream.stop_stream()
         sound.file.close()
 
-class Object(object):
-    """ Used to define a game object, such as spacecraft or meteors.
+class BaseObject(object):
+    """ BaseObject Args
+        canvas : tk.Canvas object, where to draw this object.
+        img : PIL.Image object
+        x, y : int
     """
-    def __init__(obj, canvas, image, x=None, y=None):
+    def __init__(obj, canvas, img, x, y):
         obj.canvas = canvas
-
-        obj.w = image.width()
-        obj.h = image.height()
-
-        obj.key = obj.canvas.create_image(x, y, image)
-
-    def __and__(A, B):
-        """ Check collision between A and B:
-            A & B -> {True, False}
-        """
-        ax, ay, aX, aY = A.box
-        bx, by, bX, bY = B.box
-        return not ((ax > bX or aX < bx) or (ay > bY or aY < by))
-
+        
     @property
     def xy(obj):
         return obj.canvas.coords(obj.key)
@@ -95,6 +86,26 @@ class Object(object):
     @property
     def y(obj):
         return obj.xy[1]
+
+class GameObject(BaseObject):
+    """ Used to define a game object, such as spacecraft or meteors.
+    """
+    def __init__(obj, canvas, img, x, y):
+        obj.canvas = canvas
+
+        
+
+        obj.map = Object.make_map(img)
+
+        obj.key = obj.canvas.create_image(x, y, image)
+
+    def __and__(A, B):
+        """ Check collision between A and B:
+            A & B -> {True, False}
+        """
+        ax, ay, aX, aY = A.box
+        bx, by, bX, bY = B.box
+        return not ((ax > bX or aX < bx) or (ay > bY or aY < by))
     
     @property
     def box(obj):
@@ -103,3 +114,27 @@ class Object(object):
         x, y = obj.xy
         w, h = obj.w, obj.h
         return int(x-w/2), int(y-h/2), int(x+w/2), int(y+h/2)
+
+class 
+
+class GIF(list):
+    
+    def __init__(gif, game, fname, start, stop):
+        buffer = [ImageTk(Image(fname % i)) for i in range(start, stop + 1)]
+        list.__init__(gif, buffer)
+
+        gif.canvas = game.canvas
+        gif.lapse = game.GAME_LAPSE / 1_000
+
+        gif.key = None
+
+    def play(gif, x, y):
+        thread.start_new(gif.__play, (x, y))
+
+    def __play(gif, x, y):
+        for frame in gif:
+            gif.key = gif.canvas.create_image(x, y, image=frame)
+            sleep(gif.lapse)
+            gif.canvas.delete(gif.key)
+
+    

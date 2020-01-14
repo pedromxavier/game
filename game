@@ -11,6 +11,8 @@ class Game:
 
     BG = r"#000000"
 
+    GAME_LAPSE = 30#ms
+
     def __init__(game):
         ## Tk screen settings
         game.root = tk.Tk()
@@ -18,7 +20,7 @@ class Game:
         game.root.attributes("-fullscreen", True)
         game.root.configure(background='black')
 
-        game.images = {
+        game.menu_images = {
             'title' : tk.PhotoImage(master=game.root, file='data/title.gif')
             'play' : tk.PhotoImage(master=menu.root,file='data/play.gif')
             'exit' : tk.PhotoImage(master=menu.root,file='data/exit.gif')
@@ -35,26 +37,38 @@ class Game:
             'explosion' : Sound('data/explosion.wav'),
         }
 
-        game.intro = Label(game.root, image=game.images['intro'], bd=0)
+        game.images = {
+            'millenium_falcon' : Image('data/millenium_falcon.gif'),
+            'fighter' : Image('data/fighter.gif'),
+            'laser' : Image('data/laser.gif'),
+        }
+
+        game.gifs = {
+            'explosion' : GIF(game, r'Explosion%d.gif', 1, 7),
+            'win' : GIF(game, r'frame_%d_delay-0.1s.gif', 0, 27),
+            'lose' : GIF(game, r'Scene%d.gif', 1, 18),
+        }
+
+        game.intro = Label(game.root, image=game.menu_images['intro'], bd=0)
 
         game.menu = Frame(game.root)
     
-        game.menu_title = Label(game.menu, bg='black',image=game.images['title'],height=210,bd=0)
+        game.menu_title = Label(game.menu, bg='black',image=game.menu_images['title'],height=210,bd=0)
         game.menu_title.pack(side='top')
     
-        game.menu_play = Label(game.menu, bg='black', game.images['play'],height=90,bd=0)
+        game.menu_play = Label(game.menu, bg='black', game.menu_images['play'],height=90,bd=0)
         game.menu_play.pack()
         game.menu_play.bind("<Button-1>", game.menu_play_func)
     
-        game.menu_rank = Label(game.menu, image=game.images['rank'],height=90,bg='black',bd=0)
+        game.menu_rank = Label(game.menu, image=game.menu_images['rank'],height=90,bg='black',bd=0)
         game.menu_rank.pack()
         game.menu_rank.bind("<Button-1>", game.menu_rank_func)
     
-        game.menu_exit = Label(game.menu, bg='black', image=game.images['exit'],height=90,bd=0)
+        game.menu_exit = Label(game.menu, bg='black', image=game.menu_images['exit'],height=90,bd=0)
         game.menu_exit.pack()
         game.menu_exit.bind("<Button-1>", game.menu_exit_func)
     
-        game.menu_controls = Label(game.menu, image=game.images['controls'],bd=0)
+        game.menu_controls = Label(game.menu, image=game.menu_images['controls'],bd=0)
         game.menu_controls.pack(side='bottom')
 
         game.rank = Frame(game.root)
@@ -62,7 +76,7 @@ class Game:
         game.rank_rank = Label(game.rank, bg='black',height=500,width=100)
         game.rank_rank.pack(side='top')
 
-        game.rank_back = Label(game.rank, bg='black', image=game.images['back'],height=150,bd=0)
+        game.rank_back = Label(game.rank, bg='black', image=game.menu_images['back'],height=150,bd=0)
         game.rank_back.pack()
         game.rank_back.bind("<Button-1>", game.rank_back_func)
     
