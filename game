@@ -1,21 +1,30 @@
 #!/usr/bin/python3.8
-from game_engine import *    
+from game_engine import *
+
+class Game:
+
+    def __init__(game):
+        ## Tk screen settings
+        game.root = tk.Tk()
+        game.root.geometry("%ix%i+0+0" %(w,h))
+        game.root.attributes("-fullscreen", True)
+        game.root.configure(background='black')
+
+        game.images = {
+            'title' : tk.PhotoImage(master=game.root, file='title.gif')
+            'play' : tk.PhotoImage(master=menu.root,file='play.gif')
+            'exit' : tk.PhotoImage(master=menu.root,file='exit.gif')
+            'rank' : tk.PhotoImage(master=menu.root,file='ranking.gif')
+            'back' : tk.PhotoImage(master=menu.root,file='back_to_menu.gif')
+            'controls' : tk.PhotoImage(master=menu.root,file='controls.gif')
+            'intro' : tk.PhotoImage(master=menu.root,file='intro.gif')
+        }
+
 
 class Menu:
 
     def __init__(menu):
-        menu.root = Tk()
-        menu.root.geometry("%ix%i+0+0" %(w,h))
-        menu.root.attributes("-fullscreen", True)
-        menu.root.configure(background='black') 
-
-        menu.TITLE_img  = PhotoImage(master=menu.root,file='titulo.gif')
-        menu.PLAY_img   = PhotoImage(master=menu.root,file='Play2.gif')
-        menu.EXIT_img   = PhotoImage(master=menu.root,file='Exit2.gif')
-        menu.RANK_img   = PhotoImage(master=menu.root,file='Ranking2.gif')
-        menu.BACK_img   = PhotoImage(master=menu.root,file='BacktoMenu.gif')
-        menu.CNTRLS_img = PhotoImage(master=menu.root,file='Controls.gif')
-        menu.INTRO_img  = PhotoImage(master=menu.root,file='A_long_time_ago.gif')
+        
 
         
         menu.introduce()

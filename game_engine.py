@@ -1,7 +1,8 @@
 import sys
 import datetime as dt
 import _thread as thread
-from tkinter import *
+import tkinter as tk
+
 from math import pi, sin, cos, e, sqrt, floor, ceil
 from random import random, randint, choice
 from time import perf_counter, sleep
