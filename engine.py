@@ -72,8 +72,11 @@ class BaseObject(object):
         img : PIL.Image object
         x, y : int
     """
-    def __init__(obj, canvas, img, x, y):
+    def __init__(obj, canvas, img, x, y, dx=0, dy=0):
         obj.canvas = canvas
+
+    def move(obj):
+        obj.canvas.move(obj.key
         
     @property
     def xy(obj):
@@ -89,15 +92,18 @@ class BaseObject(object):
 
 class GameObject(BaseObject):
     """ Used to define a game object, such as spacecraft or meteors.
+        canvas : tk.Canvas object
+        img : PIL.Image object
+        x, y : int
     """
+    __img_cache__ = {}
+
     def __init__(obj, canvas, img, x, y):
         obj.canvas = canvas
 
-        
+        obj.map = GameObject.make_map(img)
 
-        obj.map = Object.make_map(img)
-
-        obj.key = obj.canvas.create_image(x, y, image)
+        obj.key = obj.canvas.create_image(x, y, obj.image)
 
     def __and__(A, B):
         """ Check collision between A and B:
@@ -115,7 +121,6 @@ class GameObject(BaseObject):
         w, h = obj.w, obj.h
         return int(x-w/2), int(y-h/2), int(x+w/2), int(y+h/2)
 
-class 
 
 class GIF(list):
     
