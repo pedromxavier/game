@@ -251,25 +251,7 @@ class Game:
     fim do jogo apos uma saudacao.
     """
     "================="
-    def GameOver(game):
-        game.quit = True
-        game.LAPSO = 999999999
-        game.contador = 0
-        game.gameoverlabel = Label(game.Space,font=("arial black",80,"bold"),
-                                   text = "GAME OVER", fg = "yellow", bg = "black")
-        game.gameoverlabel.place(relx=0.2, rely=0.002)
 
-        ranks = list(map(lambda x: x[1], game.menu.ranking.list))
-        
-        if ranks == []:
-            game.play_gif(game.WIN_seq)
-            
-        elif game.get_score() >= max(ranks + [0]): 
-            game.play_gif(game.WIN_seq)
-        else:
-            game.play_gif(game.LOST_seq)
-        game.answer.focus()
-        game.root.bind("<Return>", game.get_name)
     
     def atirarMF(game):
         if game.shotbtn and game.cooldown:
@@ -381,21 +363,6 @@ class Game:
                                     game.Space.coords(game.MF)[1],
                                     image=game.Explosion[4])
             game.GameOver()
-        
-    def SpaceShift(game):
-        dy = game.VEL
-        for star in game.Stars:
-            
-            x1,y1,x2,y2 = game.Space.coords(star)
-            
-            x,y = (x1+x2)/2.0,(y1+y2)/2.0
-            
-            s = abs(x1-x2)/2.0
- 
-            if y - dy > game.LY:
-                game.Space.coords(star, x+s,s,x-s,-s)
-
-            game.Space.move(star, 0, dy)
 
     def levelincrease(game):
         if game.score%10*game.nivel == 0:
@@ -421,61 +388,6 @@ class Game:
                 game.Space.delete(tiro)            # o programa
                 game.tirosdoImperio.remove(tiro)     
             game.VishSeraQueAtingiuAMillenium(tiro,game.MF)
-         
-    def AsteroidRain(game):
-
-        for (asteroide,vetor) in game.AsteroidsPlaced:
-            """Asteroides tambem se mexem, oras"""
-            game.Space.move(asteroide,vetor[0],vetor[1])
-            game.CuidadoComOsAsteroide(asteroide)
-            try:
-                """Pra destruir os tiros que chegam ate o asteroide"""
-                a,b = game.Space.coords(asteroide)[0],game.Space.coords(asteroide)[1]
-                for laser in game.tirosrebeldes:
-                    x,y = game.Space.coords(laser)[0],game.Space.coords(laser)[1]
-                    verificacao = ((a-x)**2+(b-y)**2)**0.5<30
-                    if verificacao:
-                        game.Space.delete(laser)
-                        game.tirosrebeldes.remove(laser)
-                    
-                for laser in game.tirosdoImperio:
-                    x,y = game.Space.coords(laser)
-                    if ((a-x)**2+(b-y)**2)**0.5<30:
-                        game.Space.delete(laser)
-                        game.tirosdoImperio.remove(laser)
-            except:
-                pass
-            
-            if game.Space.coords(asteroide)[1]>game.LY: # Pra nao sobrecarregar
-                game.Space.delete(asteroide)            # o programa
-                game.AsteroidsPlaced.remove((asteroide,vetor))
-             
-        game.checkColisaoFighterMF()
-
-    def Starbirth(game):
-        """
-        Cria as estrelas do jogo.
-        """
-        def get_color():
-            KEY = random()
-            if KEY < 0.92:
-                return '#ffffff'
-            elif KEY < 0.96:
-                return '#ffff33'
-            elif KEY < 0.99:
-                return '#ff0022'
-            else:
-                return '#000055'
-                   
-        for star in range(int(game.stars)):
-            
-            x, y, r = game.LX*random(), game.LY*random(), 2*random()
-            color = get_color()
-            
-            game.Stars.append(
-                              game.Space.create_oval(x+r, y+r, x-r, y-r,
-                                                     fill=color,outline=color)
-                              )  
 
 def main():
     menu = Menu()

@@ -75,8 +75,10 @@ class BaseObject(object):
     def __init__(obj, canvas, img, x, y, dx=0, dy=0):
         obj.canvas = canvas
 
+        obj.dxdy = dx, dy
+
     def move(obj):
-        obj.canvas.move(obj.key
+        obj.canvas.move(obj.key, *obj.dxdy)
         
     @property
     def xy(obj):
@@ -101,17 +103,45 @@ class GameObject(BaseObject):
     def __init__(obj, canvas, img, x, y):
         obj.canvas = canvas
 
-        obj.map = GameObject.make_map(img)
+        obj.img = img
 
-        obj.key = obj.canvas.create_image(x, y, obj.image)
+        obj.tkimg = ImageTk(obj.img)
 
-    def __and__(A, B):
+        obj.map = GameObject.make_map(obj.img)
+
+        obj.key = obj.canvas.create_image(x, y, image=obj.tkimg)
+
+    @staticmethod
+    def make_map(img):
+        array = np.array(img)
+
+    @staticmethod
+    def box_intersection(A, B):
         """ Check collision between A and B:
             A & B -> {True, False}
         """
         ax, ay, aX, aY = A.box
         bx, by, bX, bY = B.box
-        return not ((ax > bX or aX < bx) or (ay > bY or aY < by))
+
+        cx = max(ax, bx)
+        cX = min(aX, bX)
+
+        cy = max(ay, by)
+        cY = min(aY, bY)
+
+        if cx > cX or cy > cY :
+            return None
+        else:
+            return (cx, cy, cX, cY)
+
+    def __and__(A, B):
+        C_box = GameObject.box_intersection(A, B)
+
+        if C_box is None:
+            return False
+        else:
+            cx, cy, cX, cY = C_box
+            return np.any(A.map[cx:cX, cy:cY] & B.map[cx:cX, cy:cY])
     
     @property
     def box(obj):
@@ -124,7 +154,9 @@ class GameObject(BaseObject):
 
 class GIF(list):
     
-    def __init__(gif, game, fname, start, stop):
+    def __init__(gif, game, fname, start, stop, sound=None):
+        assert "%d" in fname or "%i" in fname
+
         buffer = [ImageTk(Image(fname % i)) for i in range(start, stop + 1)]
         list.__init__(gif, buffer)
 
@@ -133,10 +165,15 @@ class GIF(list):
 
         gif.key = None
 
+        gif.sound = sound
+
     def play(gif, x, y):
         thread.start_new(gif.__play, (x, y))
 
     def __play(gif, x, y):
+        if gif.sound is not None:
+            gif.sound.play()
+
         for frame in gif:
             gif.key = gif.canvas.create_image(x, y, image=frame)
             sleep(gif.lapse)
