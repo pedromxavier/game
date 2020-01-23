@@ -2,6 +2,7 @@ import sys
 import datetime as dt
 import _thread as thread
 import tkinter as tk
+import numpy as np
 
 from math import pi, sin, cos, e, sqrt, floor, ceil
 from random import random, randint, choice
@@ -11,6 +12,8 @@ from PIL import Image, ImageTk
 
 import subprocess
 import pyautogui
+import pyaudio
+import wave
 
 clock = perf_counter
 
@@ -23,7 +26,7 @@ class Sound:
     def __init__(sound, fname):
         sound.file = wave.open(fname, 'rb')
 
-        sound.samplewidth = sound.file.getsamplewidth()
+        sound.samplewidth = sound.file.getsampwidth()
 
         sound.kwargs = {
             'format' : sound.PA.get_format_from_width(sound.samplewidth),
@@ -98,7 +101,7 @@ class GameObject(BaseObject):
         img : PIL.Image object
         x, y : int
     """
-    __img_cache__ = {}
+    __groups__ = []
 
     def __init__(obj, canvas, img, x, y):
         obj.canvas = canvas
@@ -151,7 +154,6 @@ class GameObject(BaseObject):
         w, h = obj.w, obj.h
         return int(x-w/2), int(y-h/2), int(x+w/2), int(y+h/2)
 
-
 class GIF(list):
     
     def __init__(gif, game, fname, start, stop, sound=None):
@@ -178,5 +180,3 @@ class GIF(list):
             gif.key = gif.canvas.create_image(x, y, image=frame)
             sleep(gif.lapse)
             gif.canvas.delete(gif.key)
-
-    

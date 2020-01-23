@@ -16,18 +16,18 @@ class Game:
     def __init__(game):
         ## Tk screen settings
         game.root = tk.Tk()
-        game.root.geometry("%ix%i+0+0" %(w,h))
+        game.root.geometry("{:d}x{:d}+0+0".format(game.W, game.H))
         game.root.attributes("-fullscreen", True)
         game.root.configure(background='black')
 
         game.menu_images = {
-            'title' : tk.PhotoImage(master=game.root, file='data/title.gif')
-            'play' : tk.PhotoImage(master=menu.root,file='data/play.gif')
-            'exit' : tk.PhotoImage(master=menu.root,file='data/exit.gif')
-            'rank' : tk.PhotoImage(master=menu.root,file='data/rank.gif')
-            'back' : tk.PhotoImage(master=menu.root,file='data/back_to_menu.gif')
-            'controls' : tk.PhotoImage(master=menu.root,file='data/controls.gif')
-            'intro' : tk.PhotoImage(master=menu.root,file='data/intro.gif')
+            'title' : tk.PhotoImage(master=game.root, file='data/title.gif'),
+            'play' : tk.PhotoImage(master=game.root,file='data/play.gif'),
+            'exit' : tk.PhotoImage(master=game.root,file='data/exit.gif'),
+            'rank' : tk.PhotoImage(master=game.root,file='data/rank.gif'),
+            'back' : tk.PhotoImage(master=game.root,file='data/back_to_menu.gif'),
+            'controls' : tk.PhotoImage(master=game.root,file='data/controls.gif'),
+            'intro' : tk.PhotoImage(master=game.root,file='data/intro.gif'),
         }
 
         game.sounds = {
@@ -56,7 +56,7 @@ class Game:
         game.menu_title = Label(game.menu, bg='black',image=game.menu_images['title'],height=210,bd=0)
         game.menu_title.pack(side='top')
     
-        game.menu_play = Label(game.menu, bg='black', game.menu_images['play'],height=90,bd=0)
+        game.menu_play = Label(game.menu, bg='black', image=game.menu_images['play'],height=90,bd=0)
         game.menu_play.pack()
         game.menu_play.bind("<Button-1>", game.menu_play_func)
     
@@ -200,6 +200,10 @@ class Game:
     def update(game):
         ...
 
+    def pause(game):
+        game.idle.place(relx=0.5, rely=0.5)
+        ...
+
     def end(game):
         ...
         game.record.place(relx=0.5, rely=0.5)
@@ -245,154 +249,8 @@ class Game:
     def score(game):
         return game.time * 2
         ...
-
-    """
-    A funcao game.GameOver decreta o
-    fim do jogo apos uma saudacao.
-    """
-    "================="
-
-    
-    def atirarMF(game):
-        if game.shotbtn and game.cooldown:
-            X,Y = game.Space.coords(game.MF)
-##            game.root.after(10,play_sound, "blaster.wav")
-            
-            game.tirosrebeldes.append(game.Space.create_image(X,Y-60,
-                                                              image=game.LASER_img))
-            game.cooldown = False
-    "======================="    
-
-    def fire_fighter(game, fighter):
-##        game.root.after(10,play_sound, "tie_blaster.wav")
-        
-        game.tirosdoImperio.append(game.Space.create_image(
-                                   game.Space.coords(fighter)[0],
-                                   game.Space.coords(fighter)[1]+30,
-                                   image=game.LASER_img))
-                                   
-    def checkColisaoFighterMF(game):
-        a,b = game.Space.coords(game.MF)[0],game.Space.coords(game.MF)[1]
-        for fighter in game.Fighters:
-            x,y = game.Space.coords(fighter)[0],game.Space.coords(fighter)[1]
-            if ((a-x)**2+(b-y)**2)**0.5<40:
-                game.Kaboom(fighter)
-                game.Space.create_image(game.Space.coords(game.MF)[0],
-                                        game.Space.coords(game.MF)[1],
-                                        image=game.Explosion[4])
-                game.GameOver()
-            
-    def VishSeraQueAtingiuAMillenium(game,laser,MF):
-        try:
-            verificacao=[abs(game.Space.coords(laser)[0]-game.Space.coords(MF)[0])<29,
-                         game.Space.coords(MF)[1]-game.Space.coords(laser)[1]<20,
-                         game.Space.coords(laser)[1]-game.Space.coords(MF)[1]<20]
-        except:
-            verificacao=[False,False,False]
-            
-        if all(verificacao):
-            game.Space.create_image(game.Space.coords(MF)[0],
-                                    game.Space.coords(MF)[1],
-                                    image=game.Explosion[4])
-            game.Space.delete(laser)
-            game.tirosdoImperio.remove(laser)
-            game.GameOver()
-
-    def SeraQueDestruiuOsInimigo(game,laser,lista):
-        for malvadao in lista:
-            try:
-                verificacao=[abs(game.Space.coords(laser)[0]-game.Space.coords(malvadao)[0])<20,
-                             game.Space.coords(laser)[1]-game.Space.coords(malvadao)[1]<15,
-                             game.Space.coords(malvadao)[1]-game.Space.coords(laser)[1]<15]
-            except:
-                verificacao=[False,False,False]
-                
-            if all(verificacao):
-                game.Kaboom(malvadao, laser)
-                
-    def Kaboom(game, AsInimigx, laser=None):
-        contador=0
-        explosion=[]
-        def explodindo(coordsdAsInimigx,coordslaser,contador,explosion,check=True):
-            if contador>1:
-                for gifAntigo in explosion:
-                    game.Space.delete(gifAntigo)
-                    explosion.remove(gifAntigo)
-            
-            if contador==0:
-                game.Space.delete(AsInimigx)      
-                game.Fighters.remove(AsInimigx)
-            
-            if contador<7: 
-                explosion.append(game.Space.create_image(
-                             coordslaser[0],coordsdAsInimigx[1],
-                             image=game.Explosion[contador]))
-                contador+=1
-                game.root.after(120,explodindo,coordsdAsInimigx,coordslaser,contador,explosion)           
-            if contador==7:
-                game.Space.delete(explosion[0])
-        
-        if laser!=None:
-##            thread.start_new_thread(play_sound, ("explosion.wav",))
-            explodindo(game.Space.coords(AsInimigx),game.Space.coords(laser),contador,explosion)
-            game.Space.delete(laser)      
-            game.tirosrebeldes.remove(laser)
-            game.score += 1
-            game.scoreboard['text'] = 'fighters: %d'%game.score
-            game.levelincrease()
-        if laser==None:
-            explodindo(game.Space.coords(AsInimigx),game.Space.coords(AsInimigx),contador,explosion,False)
-        
-    def TheBirthOfAnAsteroid(game,x,y,asteroid='random'):
-        vetor = (3*cos(pi*random()), 4 + 6*random())
-        if asteroid == 'random':
-            game.AsteroidsPlaced+=[((game.Space.create_image(x,y,image=choice(game.Asteroids))), vetor)]
-        else:
-            game.AsteroidsPlaced+=[game.Space.create_image(x,y,image=asteroid), vetor]
-            
-    def CuidadoComOsAsteroide(game, asteroide):
-        a,b = game.Space.coords(asteroide)[0],game.Space.coords(asteroide)[1]
-        for fighter in game.Fighters:
-            x,y = game.Space.coords(fighter)[0],game.Space.coords(fighter)[1]
-            if ((a-x)**2+(b-y)**2)**0.5<55:
-                game.Kaboom(fighter)
-                
-        x,y = game.Space.coords(game.MF)[0],game.Space.coords(game.MF)[1]
-        if ((a-x)**2+(b-y)**2)**0.5<70:
-            game.Space.create_image(game.Space.coords(game.MF)[0],
-                                    game.Space.coords(game.MF)[1],
-                                    image=game.Explosion[4])
-            game.GameOver()
-
-    def levelincrease(game):
-        if game.score%10*game.nivel == 0:
-            game.nivel += 1
-
-    def LaserBeams(game):
-           
-        for tiro in game.tirosrebeldes:
-            """movendo os tiros rebeldes pra cima"""
-            game.Space.move(tiro,0,-15)
-            
-            if game.Space.coords(tiro)[1]<0: # Pra nao sobrecarregar
-                game.Space.delete(tiro)      # o programa
-                game.tirosrebeldes.remove(tiro)
-                
-            else:
-                 game.SeraQueDestruiuOsInimigo(tiro, game.Fighters)
-            
-        for tiro in game.tirosdoImperio:
-            """e os tiros do Imperio pra baixo"""
-            game.Space.move(tiro,0,15)
-            if game.Space.coords(tiro)[1]>game.LY: # Pra nao sobrecarregar
-                game.Space.delete(tiro)            # o programa
-                game.tirosdoImperio.remove(tiro)     
-            game.VishSeraQueAtingiuAMillenium(tiro,game.MF)
-
-def main():
-    menu = Menu()
     
 if  __name__ == '__main__':
-    main()
+    game = Game()
    
     
