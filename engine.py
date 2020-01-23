@@ -1,4 +1,3 @@
-import sys
 import datetime as dt
 import _thread as thread
 import tkinter as tk
@@ -6,16 +5,19 @@ import numpy as np
 
 from math import pi, sin, cos, e, sqrt, floor, ceil
 from random import random, randint, choice
-from time import perf_counter, sleep
-from pickle import *
+
+from time import perf_counter as clock
+from time import sleep
+
 from PIL import Image, ImageTk
 
+import sys
+import os
+import pickle
 import subprocess
 import pyautogui
 import pyaudio
 import wave
-
-clock = perf_counter
 
 class Sound:
 
@@ -77,13 +79,17 @@ class Sound:
         import librosa
         import soundfile
 
-        data, junk = librosa.load(fname, sr=16000)
+        head, tail = os.path.split(fname)
 
-        temp_fname = "temp_{}".format(fname)
-        
-        soundfile.write(temp_fname, data, sr=16000)
+        temp_fname = os.path.join(head, "temp_{}".format(tail))
 
-        return wave.open(temp_fname, 'rb')
+        try:
+            return wave.open(temp_fname, 'rb')
+        except FileNotFoundError:
+            data, junk = librosa.load(fname, sr=16000)
+            soundfile.write(temp_fname, data, sr=16000)
+
+            return wave.open(temp_fname, 'rb')
 
 
 class BaseObject(object):
@@ -176,7 +182,7 @@ class GIF(list):
     def __init__(gif, game, fname, start, stop, sound=None):
         assert "%d" in fname or "%i" in fname
 
-        buffer = [ImageTk(Image(fname % i)) for i in range(start, stop + 1)]
+        buffer = [ImageTk.PhotoImage((Image.open(fname % i))) for i in range(start, stop + 1)]
         list.__init__(gif, buffer)
 
         gif.canvas = game.canvas

@@ -13,6 +13,8 @@ class Game:
 
     GAME_LAPSE = 30#ms
 
+    SCORE_FILE = r'score.bin'
+
     def __init__(game):
         ## Tk screen settings
         game.root = tk.Tk()
@@ -32,58 +34,58 @@ class Game:
 
         game.sounds = {
             'main_theme' : Sound('data/main_theme.wav'),
-            'blaster' : Sound('data/blaster.wav'),
-            'tie_blaster' : Sound('data/tie_blaster.wav'),
-            'explosion' : Sound('data/explosion.wav'),
+            ## 'blaster' : Sound('data/blaster.wav'),
+            ## 'tie_blaster' : Sound('data/tie_blaster.wav'),
+            ## 'explosion' : Sound('data/explosion.wav'),
         }
 
-        game.images = {
-            'millenium_falcon' : Image('data/millenium_falcon.gif'),
-            'fighter' : Image('data/fighter.gif'),
-            'laser' : Image('data/laser.gif'),
-        }
+        game.intro = tk.Label(game.root, image=game.menu_images['intro'], bd=0)
 
-        game.gifs = {
-            'explosion' : GIF(game, r'Explosion%d.gif', 1, 7),
-            'win' : GIF(game, r'frame_%d_delay-0.1s.gif', 0, 27),
-            'lose' : GIF(game, r'Scene%d.gif', 1, 18),
-        }
-
-        game.intro = Label(game.root, image=game.menu_images['intro'], bd=0)
-
-        game.menu = Frame(game.root)
+        game.menu = tk.Frame(game.root, bg=game.BG)
     
-        game.menu_title = Label(game.menu, bg='black',image=game.menu_images['title'],height=210,bd=0)
+        game.menu_title = tk.Label(game.menu, bg='black',image=game.menu_images['title'],height=210,bd=0)
         game.menu_title.pack(side='top')
     
-        game.menu_play = Label(game.menu, bg='black', image=game.menu_images['play'],height=90,bd=0)
+        game.menu_play = tk.Label(game.menu, bg='black', image=game.menu_images['play'],height=90,bd=0)
         game.menu_play.pack()
         game.menu_play.bind("<Button-1>", game.menu_play_func)
     
-        game.menu_rank = Label(game.menu, image=game.menu_images['rank'],height=90,bg='black',bd=0)
+        game.menu_rank = tk.Label(game.menu, image=game.menu_images['rank'],height=90,bg='black',bd=0)
         game.menu_rank.pack()
         game.menu_rank.bind("<Button-1>", game.menu_rank_func)
     
-        game.menu_exit = Label(game.menu, bg='black', image=game.menu_images['exit'],height=90,bd=0)
+        game.menu_exit = tk.Label(game.menu, bg='black', image=game.menu_images['exit'],height=90,bd=0)
         game.menu_exit.pack()
         game.menu_exit.bind("<Button-1>", game.menu_exit_func)
     
-        game.menu_controls = Label(game.menu, image=game.menu_images['controls'],bd=0)
+        game.menu_controls = tk.Label(game.menu, image=game.menu_images['controls'],bd=0)
         game.menu_controls.pack(side='bottom')
 
-        game.rank = Frame(game.root)
+        game.rank = tk.Frame(game.root)
 
-        game.rank_rank = Label(game.rank, bg='black',height=500,width=100)
+        game.rank_rank = tk.Label(game.rank, bg='black',height=500,width=100)
         game.rank_rank.pack(side='top')
 
-        game.rank_back = Label(game.rank, bg='black', image=game.menu_images['back'],height=150,bd=0)
-        game.rank_back.pack()
+        game.rank_back = tk.Label(game.rank, bg='black',image=game.menu_images['back'],height=150,bd=0)
+        game.rank_back.pack(side='top')
         game.rank_back.bind("<Button-1>", game.rank_back_func)
     
-        game.game = Frame(game.root)
+        game.game = tk.Frame(game.root)
 
-        game.canvas = Canvas(game.game, width=game.W, height=game.H, bg=game.BG)
+        game.canvas = tk.Canvas(game.game, width=game.W, height=game.H, bg=game.BG)
         game.canvas.pack(**game.EXPAND)
+
+        game.images = {
+            'millenium_falcon' : Image.open('data/millenium_falcon.gif'),
+            'fighter' : Image.open('data/fighter.gif'),
+            'laser' : Image.open('data/laser.gif'),
+        }
+
+        game.gifs = {
+            'explosion' : GIF(game, r'data/Explosion%d.gif', 1, 7),
+            'win' : GIF(game, r'data/frame_%d_delay-0.1s.gif', 0, 27),
+            'lose' : GIF(game, r'data/Scene%d.gif', 1, 18),
+        }
 
         #=================================================#
         #               :: MOVIMENTO ::                   #
@@ -120,40 +122,43 @@ class Game:
 
         #=================================================#
 
-        game.score = Frame(game.game)
+        game.score_frame = tk.Frame(game.game)
 
-        game.score_fighters = Frame(game.score)
+        game.score_fighters = tk.Frame(game.score_frame)
         game.score_fighters.pack(side='top')
 
-        game.score_fighters_text = Label(game.score_fighters, text="Fighters:")
+        game.score_fighters_text = tk.Label(game.score_fighters, text="Fighters:")
         game.score_fighters_text.pack(side='left')
 
-        game.score_fighters_num = Label(game.score_fighters, text="0")
+        game.score_fighters_num = tk.Label(game.score_fighters, text="0")
         game.score_fighters_num.pack(side='left')
 
-        game.score_time = Frame(game.score)
+        game.score_time = tk.Frame(game.score_frame)
         game.score_time.pack(side='top')
 
-        game.score_time_text = Label(game.score_time, text="Fighters:")
+        game.score_time_text = tk.Label(game.score_time, text="Fighters:")
         game.score_time_text.pack(side='left')
 
-        game.score_time_num = Label(game.score_time, text="0.0")
+        game.score_time_num = tk.Label(game.score_time, text="0.0")
         game.score_time_num.pack(side='left')
 
-        game.record = Frame(game.game)
+        game.record = tk.Frame(game.game)
         
-        game.record_question = Label(game.record, text = "Enter your name:",fg='white',bg='black')
+        game.record_question = tk.Label(game.record, text = "Enter your name:",fg='white',bg='black')
         game.record_question.pack()
 
         game.record.bind('<Return>', game.save_score)
 
-        game.player_name = StringVar()
+        game.player_name = tk.StringVar()
 
-        game.record_answer = Entry(game.record, textvariable=game.player_name)
+        game.record_answer = tk.Entry(game.record, textvariable=game.player_name)
         game.record_answer.pack()
 
+        game.start()
 
-    def menu_play_func(game):
+        game.root.mainloop()
+
+    def menu_play_func(game, event):
         ## Switch from Menu to Canvas
         game.menu.pack_forget()
         game.game.pack(**game.EXPAND)
@@ -161,7 +166,7 @@ class Game:
         ## Start game
         game.play()
 
-    def menu_exit_func(game):
+    def menu_exit_func(game, event):
         ## Close Sounds
         for sound in game.sounds.values():
             sound.close()
@@ -169,22 +174,22 @@ class Game:
         ## Close Screen
         game.root.destroy()
     
-    def menu_rank_func(game):
+    def menu_rank_func(game, event):
         ## Switch to ranking
         game.menu.pack_forget()
-        game.rank.pack()
+        game.rank.pack(**game.EXPAND)
     
-    def rank_back_func(game):
+    def rank_back_func(game, event):
         ## Switch back to menu
         game.rank.pack_forget()
-        game.menu.pack()
+        game.menu.pack(**game.EXPAND)
 
     def start(game):
         ## Show Intro Image
         game.intro.pack(anchor='center')
 
         ## Start playing main theme
-        game.sounds['intro'].loop()
+        game.sounds['main_theme'].loop()
 
         sleep(game.INTRO_LAPSE)
 
@@ -201,13 +206,36 @@ class Game:
         ...
 
     def pause(game):
-        game.idle.place(relx=0.5, rely=0.5)
         ...
 
     def end(game):
-        ...
+        game.final_score = game.score
+
         game.record.place(relx=0.5, rely=0.5)
         game.record_answer.focus()
+        
+    def save_score(game, name, score):
+        if not name:
+            return
+
+        with open(game.SCORE_FILE, 'rb') as file:
+            scores = pickle.load(file)
+
+        date = dt.datetime.now()
+        
+        for i in range(len(scores)):
+            if score >= scores[i][1]:
+                scores.insert(i, (name, score, date))
+                break
+        else:
+            scores.append((name, score, date))
+
+        with open(game.SCORE_FILE, 'wb') as file:
+            pickle.dump(scores, file)
+
+        game.reset()
+
+    def reset(game):
         ...
 
     ## ===================== ##
@@ -251,6 +279,4 @@ class Game:
         ...
     
 if  __name__ == '__main__':
-    game = Game()
-   
-    
+    Game()
