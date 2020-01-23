@@ -206,7 +206,10 @@ class Game:
         ...
 
     def pause(game):
-        ...
+        game.pause_time = clock()
+
+    def resume(game):
+        game.start_time = clock() - game.pause_time + game.start_time
 
     def end(game):
         game.final_score = game.score
@@ -232,8 +235,6 @@ class Game:
 
         with open(game.SCORE_FILE, 'wb') as file:
             pickle.dump(scores, file)
-
-        game.reset()
 
     def reset(game):
         ...
