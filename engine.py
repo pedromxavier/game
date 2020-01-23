@@ -24,7 +24,10 @@ class Sound:
     PA = pyaudio.PyAudio() 
 
     def __init__(sound, fname):
-        sound.file = wave.open(fname, 'rb')
+        try:
+            sound.file = wave.open(fname, 'rb')
+        except wave.Error:
+            sound.file = Sound.fix_wav(fname)
 
         sound.samplewidth = sound.file.getsampwidth()
 
@@ -68,6 +71,20 @@ class Sound:
         
         sound.stream.stop_stream()
         sound.file.close()
+
+    @staticmethod
+    def fix_wav(fname):
+        import librosa
+        import soundfile
+
+        data, junk = librosa.load(fname, sr=16000)
+
+        temp_fname = "temp_{}".format(fname)
+        
+        soundfile.write(temp_fname, data, sr=16000)
+
+        return wave.open(temp_fname, 'rb')
+
 
 class BaseObject(object):
     """ BaseObject Args
