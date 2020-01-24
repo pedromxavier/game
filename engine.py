@@ -1,6 +1,7 @@
 import datetime as dt
 import _thread as thread
 import tkinter as tk
+from tkinter.font import Font, nametofont
 import numpy as np
 
 from math import pi, sin, cos, e, sqrt, floor, ceil

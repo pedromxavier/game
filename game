@@ -15,9 +15,15 @@ class Game:
 
     SCORE_FILE = r'score.bin'
 
+    FONT = ('Courier New', 14, 'bold')
+
     def __init__(game):
         ## Tk screen settings
         game.root = tk.Tk()
+
+        game.default_font = nametofont("TkDefaultFont")
+        game.default_font.configure(family="Courier New", size=20)
+
         game.root.geometry("{:d}x{:d}+0+0".format(game.W, game.H))
         game.root.attributes("-fullscreen", True)
         game.root.configure(background='black')
@@ -27,6 +33,7 @@ class Game:
             'play' : tk.PhotoImage(master=game.root,file='data/play.gif'),
             'exit' : tk.PhotoImage(master=game.root,file='data/exit.gif'),
             'rank' : tk.PhotoImage(master=game.root,file='data/rank.gif'),
+            'ranking' : tk.PhotoImage(master=game.root,file='data/ranking.gif'),
             'back' : tk.PhotoImage(master=game.root,file='data/back_to_menu.gif'),
             'controls' : tk.PhotoImage(master=game.root,file='data/controls.gif'),
             'intro' : tk.PhotoImage(master=game.root,file='data/intro.gif'),
@@ -43,31 +50,37 @@ class Game:
 
         game.menu = tk.Frame(game.root, bg=game.BG)
     
-        game.menu_title = tk.Label(game.menu, bg='black',image=game.menu_images['title'],height=210,bd=0)
+        game.menu_title = tk.Label(game.menu, bg='black',image=game.menu_images['title'],bd=0)
         game.menu_title.pack(side='top')
+
+        game.menu_options = tk.Frame(game.menu, bg='black')
+        game.menu_options.pack(expand=True)
     
-        game.menu_play = tk.Label(game.menu, bg='black', image=game.menu_images['play'],height=90,bd=0)
+        game.menu_play = tk.Label(game.menu_options, bg='black', image=game.menu_images['play'],bd=0)
         game.menu_play.pack()
         game.menu_play.bind("<Button-1>", game.menu_play_func)
     
-        game.menu_rank = tk.Label(game.menu, image=game.menu_images['rank'],height=90,bg='black',bd=0)
+        game.menu_rank = tk.Label(game.menu_options, image=game.menu_images['rank'],bg='black',bd=0)
         game.menu_rank.pack()
         game.menu_rank.bind("<Button-1>", game.menu_rank_func)
     
-        game.menu_exit = tk.Label(game.menu, bg='black', image=game.menu_images['exit'],height=90,bd=0)
+        game.menu_exit = tk.Label(game.menu_options, bg='black', image=game.menu_images['exit'],bd=0)
         game.menu_exit.pack()
         game.menu_exit.bind("<Button-1>", game.menu_exit_func)
     
         game.menu_controls = tk.Label(game.menu, image=game.menu_images['controls'],bd=0)
         game.menu_controls.pack(side='bottom')
 
-        game.rank = tk.Frame(game.root)
+        game.rank = tk.Frame(game.root, bg='black')
 
-        game.rank_rank = tk.Label(game.rank, bg='black',height=500,width=100)
-        game.rank_rank.pack(side='top')
+        game.rank_title = tk.Label(game.rank, image=game.menu_images['ranking'],bd=0)
+        game.rank_title.pack(side='top')
 
-        game.rank_back = tk.Label(game.rank, bg='black',image=game.menu_images['back'],height=150,bd=0)
-        game.rank_back.pack(side='top')
+        game.rank_rank = tk.Label(game.rank, text="Pedro - 1200 - 01/02/2020\nJoão - 1199 - 01/02/2020", fg='white', bg='black',width=100)
+        game.rank_rank.pack(expand=True)
+
+        game.rank_back = tk.Label(game.rank, bg='black',image=game.menu_images['back'],bd=0)
+        game.rank_back.pack(side='bottom')
         game.rank_back.bind("<Button-1>", game.rank_back_func)
     
         game.game = tk.Frame(game.root)
@@ -122,25 +135,27 @@ class Game:
 
         #=================================================#
 
-        game.score_frame = tk.Frame(game.game)
+        game.score_frame = tk.Frame(game.game, width=game.W)
 
-        game.score_fighters = tk.Frame(game.score_frame)
-        game.score_fighters.pack(side='top')
+        game.score_points = tk.Frame(game.score_frame)
+        game.score_points.pack(side='top')
 
-        game.score_fighters_text = tk.Label(game.score_fighters, text="Fighters:")
-        game.score_fighters_text.pack(side='left')
+        game.score_points_text = tk.Label(game.score_points, text="Fighters:", font=game.FONT)
+        game.score_points_text.pack(side='left')
 
-        game.score_fighters_num = tk.Label(game.score_fighters, text="0")
-        game.score_fighters_num.pack(side='left')
+        game.score_points_num = tk.Label(game.score_points, text="0", font=game.FONT)
+        game.score_points_num.pack(side='left')
 
         game.score_time = tk.Frame(game.score_frame)
         game.score_time.pack(side='top')
 
-        game.score_time_text = tk.Label(game.score_time, text="Fighters:")
+        game.score_time_text = tk.Label(game.score_time, text="Fighters:", font=game.FONT)
         game.score_time_text.pack(side='left')
 
-        game.score_time_num = tk.Label(game.score_time, text="0.0")
+        game.score_time_num = tk.Label(game.score_time, text="0.0", font=game.FONT)
         game.score_time_num.pack(side='left')
+
+        game.score_frame.place(relx=1, rely=1, anchor='se')
 
         game.record = tk.Frame(game.game)
         
@@ -154,7 +169,7 @@ class Game:
         game.record_answer = tk.Entry(game.record, textvariable=game.player_name)
         game.record_answer.pack()
 
-        game.start()
+        game.load()
 
         game.root.mainloop()
 
@@ -184,7 +199,7 @@ class Game:
         game.rank.pack_forget()
         game.menu.pack(**game.EXPAND)
 
-    def start(game):
+    def load(game):
         ## Show Intro Image
         game.intro.pack(anchor='center')
 
@@ -198,18 +213,31 @@ class Game:
         game.menu.pack(**game.EXPAND)
 
     def play(game):
-        ...
+        ## create game objects
+        game.stars = []
+        game.ships = []
+        game.lasers = []
+        game.rocks = []
+
+        game.points = 0
         game.start_time = clock()
-        ...
 
     def update(game):
-        ...
+        if game.paused:
+            return
+        else:
+            ...
+            game.score_points_num['text'] = game.points
+            game.score_time_num['text'] = "{:.1f}".format(game.time)
+            ...
 
-    def pause(game):
-        game.pause_time = clock()
+    def toggle_pause(game):
+        if game.paused:
+            game.start_time += (clock() - game.pause_time)
+        else:
+            game.pause_time = clock()
 
-    def resume(game):
-        game.start_time = clock() - game.pause_time + game.start_time
+        game.paused = not game.paused
 
     def end(game):
         game.final_score = game.score
@@ -276,7 +304,7 @@ class Game:
 
     @property
     def score(game):
-        return game.time * 2
+        return int(round(game.time * game.points))
         ...
     
 if  __name__ == '__main__':
