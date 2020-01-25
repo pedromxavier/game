@@ -5,9 +5,13 @@ class Game:
 
     EXPAND = dict(expand=True, fill='both')
 
-    INTRO_LAPSE = 2.0
+    INTRO_LAPSE = 3
 
     W, H = pyautogui.size()
+
+    ## Millenium Falcon Movement Limit
+    x, y = 0, 0
+    X, Y = W, H
 
     BG = r"#000000"
 
@@ -15,7 +19,11 @@ class Game:
 
     SCORE_FILE = r'score.bin'
 
+    STARS = 1_000
+
     FONT = ('Courier New', 14, 'bold')
+
+    star_dy = 3
 
     def __init__(game):
         ## Tk screen settings
@@ -25,6 +33,7 @@ class Game:
         game.default_font.configure(family="Courier New", size=20)
 
         game.root.geometry("{:d}x{:d}+0+0".format(game.W, game.H))
+        game.root['bg'] = game.BG
         game.root.attributes("-fullscreen", True)
         game.root.configure(background='black')
 
@@ -130,9 +139,14 @@ class Game:
 
         #=================================================#
         game.start_time = None
-        
-        game.objects = []
+        game.points = None
+        game.started = False
+        game.paused = False
 
+        game.stars = None
+        game.rocks = None
+        game.fighters = None
+        game.lasers = None
         #=================================================#
 
         game.score_frame = tk.Frame(game.game, width=game.W)
@@ -149,7 +163,7 @@ class Game:
         game.score_time = tk.Frame(game.score_frame)
         game.score_time.pack(side='top')
 
-        game.score_time_text = tk.Label(game.score_time, text="Fighters:", font=game.FONT)
+        game.score_time_text = tk.Label(game.score_time, text="Time:", font=game.FONT)
         game.score_time_text.pack(side='left')
 
         game.score_time_num = tk.Label(game.score_time, text="0.0", font=game.FONT)
@@ -169,17 +183,50 @@ class Game:
         game.record_answer = tk.Entry(game.record, textvariable=game.player_name)
         game.record_answer.pack()
 
+        game.pause_menu = tk.Frame(game.game)
+
+        game.pause_label = tk.Label(game.pause_menu, font=("Times New Roman", 72, "bold"), bg='black', fg='white')
+        game.pause_label['text'] = "Paused."
+        game.pause_label.pack(expand=True)
+
+        game.root.bind("<Escape>", game.toggle_pause)
+
         game.load()
 
         game.root.mainloop()
+
+    class MilleniumFalcon(GameObject):
+
+        dx = 10
+        dy = 10
+
+        def dxdy(obj, game, x, y):
+            dx, dy = 0, 0
+            if game.btn_down:
+                dy += obj.dy
+            if game.btn_up:
+                dy -= obj.dy
+            if game.btn_left:
+                dx -= obj.dx
+            if game.btn_right:
+                dx += obj.dx
+            dx = min(max(game.x, x + dx), game.X) - x
+            dy = min(max(game.y, y + dy), game.Y) - y
+            return dx, dy
+
+        def __init__(obj, game):
+            GameObject.__init__(obj, game, obj.IMG, obj.X, obj.Y)
 
     def menu_play_func(game, event):
         ## Switch from Menu to Canvas
         game.menu.pack_forget()
         game.game.pack(**game.EXPAND)
 
+        ## Create Game Objects
+        game.create()
+
         ## Start game
-        game.play()
+        game.start()
 
     def menu_exit_func(game, event):
         ## Close Sounds
@@ -188,6 +235,9 @@ class Game:
 
         ## Close Screen
         game.root.destroy()
+
+        ## End Program
+        sys.exit(None)
     
     def menu_rank_func(game, event):
         ## Switch to ranking
@@ -200,11 +250,17 @@ class Game:
         game.menu.pack(**game.EXPAND)
 
     def load(game):
-        ## Show Intro Image
-        game.intro.pack(anchor='center')
-
         ## Start playing main theme
         game.sounds['main_theme'].loop()
+
+        thread.start_new(game.__load, ())
+
+    def reload(game):
+        game.load()
+
+    def __load(game):
+        ## Show Intro Image
+        game.intro.pack(anchor='center')
 
         sleep(game.INTRO_LAPSE)
 
@@ -212,45 +268,112 @@ class Game:
         game.intro.pack_forget()
         game.menu.pack(**game.EXPAND)
 
-    def play(game):
-        ## create game objects
-        game.stars = []
-        game.ships = []
-        game.lasers = []
-        game.rocks = []
-
+    def start(game):
         game.points = 0
+        game.started = True
         game.start_time = clock()
+
+        game.loop()
+
+    def loop(game):
+        if game.update():
+            game.root.after(game.GAME_LAPSE, game.loop)
+        else:
+            return
+
+    def create(game):
+        """ Creates all game objects.
+        """
+        game.create_stars()
+
+        game.millenium_falcon = Game.MilleniumFalcon(game)
+    
+
+    def create_stars(game):
+        game.stars = [game.create_star() for _ in range(game.STARS)]
+
+    def create_star(game):
+        x, y = random.randint(0, game.W), random.randint(0, game.H)
+
+        r = random.randint(1,2)
+
+        z = random.random()
+
+        if z < 0.9:
+            color = "#ffffff"
+        elif z < 0.95:
+            color = "#77ffff"
+        elif z < 0.98:
+            color = "#ff2222"
+        else:
+            color = "#2222ff"
+
+        return game.canvas.create_oval(x-r, y-r, x+r, y+r, fill=color, outline=color)
+        
 
     def update(game):
         if game.paused:
+            return True
+        else:
+            game.update_star()
+            ## game.update_move()
+            game.update_text()
+
+            return True
+
+    def oval_coords(game, key):
+        x1, y1, x2, y2 = game.canvas.coords(key)
+        return (x1 + x2) // 2, (y1 + y2) // 2
+
+    def update_star(game):
+        for star in game.stars:
+            x, y = game.oval_coords(star)
+            if y + game.star_dy > game.H:
+                dy = - game.H + random.randint(-1, 1)
+            else:
+                dy = game.star_dy
+            game.canvas.move(star, 0, dy)
+
+    def update_move(game):
+        for obj in game.objects:
+            obj.move()
+    
+    def update_text(game):
+        game.score_points_num['text'] = game.points
+        game.score_time_num['text'] = "{:.1f}".format(game.time)
+
+    def toggle_pause(game, event):
+        if not game.started:
             return
         else:
-            ...
-            game.score_points_num['text'] = game.points
-            game.score_time_num['text'] = "{:.1f}".format(game.time)
-            ...
+            game.paused = not game.paused
 
-    def toggle_pause(game):
         if game.paused:
-            game.start_time += (clock() - game.pause_time)
-        else:
+            game.pause_menu.place(relx=0.5, rely=0.5, anchor='c')
             game.pause_time = clock()
-
-        game.paused = not game.paused
+        else:
+            game.pause_menu.place_forget()
+            game.start_time += (clock() - game.pause_time)
 
     def end(game):
         game.final_score = game.score
 
         game.record.place(relx=0.5, rely=0.5)
         game.record_answer.focus()
+
+    def load_score(game):
+        """
+        """
+        with open(game.SCORE_FILE, 'rb') as file:
+            return pickle.load(file)
         
     def save_score(game, name, score):
+        """
+        """
         if not name:
             return
 
-        with open(game.SCORE_FILE, 'rb') as file:
-            scores = pickle.load(file)
+        scores = game.load_score()
 
         date = dt.datetime.now()
         
@@ -263,10 +386,6 @@ class Game:
 
         with open(game.SCORE_FILE, 'wb') as file:
             pickle.dump(scores, file)
-
-    def reset(game):
-        ...
-
     ## ===================== ##
 
     def p_shot(game, event):
@@ -306,6 +425,18 @@ class Game:
     def score(game):
         return int(round(game.time * game.points))
         ...
+
+    @property
+    def score_list(game):
+        ...
+
+    @property
+    def objects(game):
+        yield game.millenium_falcon
+        for group in (game.lasers, game.fighters, game.rocks):
+            for item in group:
+                yield item
+
     
 if  __name__ == '__main__':
     Game()

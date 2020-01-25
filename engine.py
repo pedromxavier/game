@@ -5,13 +5,13 @@ from tkinter.font import Font, nametofont
 import numpy as np
 
 from math import pi, sin, cos, e, sqrt, floor, ceil
-from random import random, randint, choice
 
 from time import perf_counter as clock
 from time import sleep
 
 from PIL import Image, ImageTk
 
+import random
 import sys
 import os
 import pickle
@@ -98,18 +98,37 @@ class BaseObject(object):
         canvas : tk.Canvas object, where to draw this object.
         img : PIL.Image object
         x, y : int
+        dxdy : func (game, x, y) -> dx, dy
+        boom : func
     """
-    def __init__(obj, canvas, img, x, y, dx=0, dy=0):
-        obj.canvas = canvas
+    def __init__(obj, game, img, x, y, dxdy = None, boom = None):
+        obj.game = game
 
-        obj.dxdy = dx, dy
+        ## Object Image
+        obj.img = img
+        obj.shape = img.shape
+        obj.tkimg = ImageTk.PhotoImage(obj.img)
+        obj.key = obj.game.canvas.create_image(x, y, image=obj.tkimg)
+
+        obj.dxdy = dxdy if dxdy is not None else obj.__dxdy
+        obj.boom = boom if boom is not None else obj.__boom
+
+    def __dxdy(obj, game, x, y):
+        return 0, 0
+
+    def __boom(obj, game):
+        return
 
     def move(obj):
-        obj.canvas.move(obj.key, *obj.dxdy)
+        obj.game.canvas.move(obj.key, *obj.dxdy(obj.game, *obj.xy))
+
+    def erase(obj):
+        obj.boom(game)
+        obj.game.canvas.delete(obj.key)
         
     @property
     def xy(obj):
-        return obj.canvas.coords(obj.key)
+        return obj.game.canvas.coords(obj.key)
 
     @property
     def x(obj):
@@ -119,28 +138,33 @@ class BaseObject(object):
     def y(obj):
         return obj.xy[1]
 
+    @property
+    def w(obj):
+        return obj.shape[0]
+
+    @property
+    def h(obj):
+        return obj.shape[1]
+
 class GameObject(BaseObject):
     """ Used to define a game object, such as spacecraft or meteors.
         canvas : tk.Canvas object
         img : PIL.Image object
         x, y : int
+        dxdy : func
+        boom : func
     """
-    __groups__ = []
 
-    def __init__(obj, canvas, img, x, y):
-        obj.canvas = canvas
-
-        obj.img = img
-
-        obj.tkimg = ImageTk(obj.img)
+    def __init__(obj, game, img, x, y, dxdy = None, boom = None):
+        BaseObject.__init__(obj, game, img, x, y, dxdy, boom)
 
         obj.map = GameObject.make_map(obj.img)
 
-        obj.key = obj.canvas.create_image(x, y, image=obj.tkimg)
-
     @staticmethod
     def make_map(img):
-        array = np.array(img)
+        array = np.array(img.convert("RGBA"))
+        img_map = np.array(array[:,:,3], dtype=np.bool)
+        return img_map
 
     @staticmethod
     def box_intersection(A, B):
@@ -161,6 +185,11 @@ class GameObject(BaseObject):
         else:
             return (cx, cy, cX, cY)
 
+    def shadow(A, C_box):
+        ax, ay, aX, aY = A.box
+        cx, cy, cX, cY = C_box
+        return A.map[cx-ax:cX-aX, cy-ay:cY-aY]
+
     def __and__(A, B):
         C_box = GameObject.box_intersection(A, B)
 
@@ -168,7 +197,9 @@ class GameObject(BaseObject):
             return False
         else:
             cx, cy, cX, cY = C_box
-            return np.any(A.map[cx:cX, cy:cY] & B.map[cx:cX, cy:cY])
+            AS, BS = A.shadow(C_box), B.shadow(C_box)
+            assert AS.shape == BS.shape
+            return np.any(AS & BS)
     
     @property
     def box(obj):
@@ -176,11 +207,12 @@ class GameObject(BaseObject):
         """
         x, y = obj.xy
         w, h = obj.w, obj.h
+
         return int(x-w/2), int(y-h/2), int(x+w/2), int(y+h/2)
 
 class GIF(list):
     
-    def __init__(gif, game, fname, start, stop, sound=None):
+    def __init__(gif, game, fname, start, stop, sound_fname=None):
         assert "%d" in fname or "%i" in fname
 
         buffer = [ImageTk.PhotoImage((Image.open(fname % i))) for i in range(start, stop + 1)]
@@ -191,7 +223,7 @@ class GIF(list):
 
         gif.key = None
 
-        gif.sound = sound
+        gif.sound = Sound(sound_fname) if sound_fname is not None else None
 
     def play(gif, x, y):
         thread.start_new(gif.__play, (x, y))
