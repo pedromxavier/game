@@ -106,7 +106,13 @@ class BaseObject(object):
 
         ## Object Image
         obj.img = img
-        obj.shape = img.shape
+        obj.shape = img.size
+
+        obj.w, obj.h = obj.shape
+
+        obj.w_2 = obj.w // 2
+        obj.h_2 = obj.h // 2
+
         obj.tkimg = ImageTk.PhotoImage(obj.img)
         obj.key = obj.game.canvas.create_image(x, y, image=obj.tkimg)
 
@@ -137,14 +143,6 @@ class BaseObject(object):
     @property
     def y(obj):
         return obj.xy[1]
-
-    @property
-    def w(obj):
-        return obj.shape[0]
-
-    @property
-    def h(obj):
-        return obj.shape[1]
 
 class GameObject(BaseObject):
     """ Used to define a game object, such as spacecraft or meteors.

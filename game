@@ -9,13 +9,16 @@ class Game:
 
     W, H = pyautogui.size()
 
+    W_2 = W // 2
+    H_2 = H // 2
+
     ## Millenium Falcon Movement Limit
     x, y = 0, 0
     X, Y = W, H
 
     BG = r"#000000"
 
-    GAME_LAPSE = 30#ms
+    GAME_LAPSE = 20#ms
 
     SCORE_FILE = r'score.bin'
 
@@ -146,7 +149,13 @@ class Game:
         game.stars = None
         game.rocks = None
         game.fighters = None
-        game.lasers = None
+
+        game.pro_lasers = None
+        game.con_lasers = None
+
+        game.lvl = None
+
+        game.tick = 0
         #=================================================#
 
         game.score_frame = tk.Frame(game.game, width=game.W)
@@ -189,16 +198,38 @@ class Game:
         game.pause_label['text'] = "Paused."
         game.pause_label.pack(expand=True)
 
+        game.root.bind("<Space>", game.shoot)
+
         game.root.bind("<Escape>", game.toggle_pause)
 
         game.load()
 
         game.root.mainloop()
 
+    class TieFighter(GameObject):
+
+        V = 5
+
+        def __init__(obj, game, x, y):
+            obj.game = game
+            obj.dx = random.randint(2, 4)
+            obj.dy = int((obj.v * obj.v - obj.dx * obj.dx) ** .5)
+
+        @property
+        def v(obj):
+            return obj.V * obj.game.lvl
+
+
+        @staticmethod
+        def spawn(game):
+            x, y = random.randint(0, game.W), 0
+
+            return TieFighter(game)
+
     class MilleniumFalcon(GameObject):
 
-        dx = 10
-        dy = 10
+        dx = 7
+        dy = 9
 
         def dxdy(obj, game, x, y):
             dx, dy = 0, 0
@@ -210,12 +241,19 @@ class Game:
                 dx -= obj.dx
             if game.btn_right:
                 dx += obj.dx
-            dx = min(max(game.x, x + dx), game.X) - x
-            dy = min(max(game.y, y + dy), game.Y) - y
+            dx = min(max(game.x + obj.w_2, x + dx), game.X - obj.w_2) - x
+            dy = min(max(game.y + obj.h_2, y + dy), game.Y - obj.h_2) - y
             return dx, dy
 
         def __init__(obj, game):
-            GameObject.__init__(obj, game, obj.IMG, obj.X, obj.Y)
+            img = game.images['millenium_falcon']
+            x, y = game.W_2, int(game.H * 0.8)
+            GameObject.__init__(obj, game, img, x, y, obj.dxdy)
+
+        def shot(obj):
+            if obj.game.btn_shot_cooldown:
+                laser = Laser(obj.game, *obj.xy)
+                obj.game.pro_lasers.append(laser)
 
     def menu_play_func(game, event):
         ## Switch from Menu to Canvas
@@ -270,6 +308,7 @@ class Game:
 
     def start(game):
         game.points = 0
+        game.lvl = 1
         game.started = True
         game.start_time = clock()
 
@@ -284,10 +323,21 @@ class Game:
     def create(game):
         """ Creates all game objects.
         """
+        ## Create Stars
         game.create_stars()
 
+        ## Create Millenium Falcon
         game.millenium_falcon = Game.MilleniumFalcon(game)
     
+        ## Create TIE Fighters
+        game.fighters = []
+
+        ## Create Asteroids
+        game.rocks = []
+
+        ## Create Lasers
+        game.pro_lasers = []
+        game.con_lasers = []
 
     def create_stars(game):
         game.stars = [game.create_star() for _ in range(game.STARS)]
@@ -316,9 +366,12 @@ class Game:
             return True
         else:
             game.update_star()
-            ## game.update_move()
+            game.update_move()
             game.update_text()
 
+            game.update_make()
+
+            game.tick = (game.tick + 1) % 1024
             return True
 
     def oval_coords(game, key):
