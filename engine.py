@@ -208,6 +208,19 @@ class GameObject(BaseObject):
 
         return int(x-w/2), int(y-h/2), int(x+w/2), int(y+h/2)
 
+class Group(set):
+
+    __binds__ = []
+
+    def __init__(self, buffer):
+        set.__init__(self, buffer)
+
+    @classmethod
+    def bind(A, B, action):
+        """ Add Action for collision.
+        """
+        ...
+
 class GIF(list):
     
     def __init__(gif, game, fname, start, stop, sound_fname=None):
