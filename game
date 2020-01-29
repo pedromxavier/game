@@ -24,9 +24,25 @@ class Game:
 
     STARS = 1_000
 
+    NAME_LENGHT = 20
+
     FONT = ('Courier New', 14, 'bold')
 
     star_dy = 3
+
+    class NameEntry(ttk.Entry):
+        def __init__(self, *args, **kwargs):
+            ttk.Entry.__init__(self, *args, **kwargs)
+
+            self.configure(validate="key", validatecommand=(self.register(self.on_validate),"%P"))
+
+        def on_validate(self, new_value):
+            val = new_value.strip()
+            if not 1 <= len(val) <= Game.NAME_LENGHT:
+                self.bell()
+                return False
+            else:
+                return True
 
     def __init__(game):
         ## Tk screen settings
@@ -88,8 +104,8 @@ class Game:
         game.rank_title = tk.Label(game.rank, image=game.menu_images['ranking'],bd=0)
         game.rank_title.pack(side='top')
 
-        game.rank_rank = tk.Label(game.rank, text="Pedro - 1200 - 01/02/2020\nJoão - 1199 - 01/02/2020", fg='white', bg='black',width=100)
-        game.rank_rank.pack(expand=True)
+        game.rank_rank = tk.Label(game.rank, text="Empty", fg='white', bg='black',width=100)
+        game.rank_rank.pack(expand=True, side='top')
 
         game.rank_back = tk.Label(game.rank, bg='black',image=game.menu_images['back'],bd=0)
         game.rank_back.pack(side='bottom')
@@ -189,7 +205,7 @@ class Game:
 
         game.player_name = tk.StringVar()
 
-        game.record_answer = tk.Entry(game.record, textvariable=game.player_name)
+        game.record_answer = Game.NameEntry(game.record, textvariable=game.player_name)
         game.record_answer.pack()
 
         game.pause_menu = tk.Frame(game.game)
@@ -197,8 +213,6 @@ class Game:
         game.pause_label = tk.Label(game.pause_menu, font=("Times New Roman", 72, "bold"), bg='black', fg='white')
         game.pause_label['text'] = "Paused."
         game.pause_label.pack(expand=True)
-
-        game.root.bind("<Space>", game.shoot)
 
         game.root.bind("<Escape>", game.toggle_pause)
 
@@ -278,6 +292,14 @@ class Game:
         sys.exit(None)
     
     def menu_rank_func(game, event):
+        ## Load Scores
+        scores = game.load_score()
+
+        if scores:
+            game.rank_rank['text'] = Game.format_scores(scores)
+        else:
+            game.rank_rank['text'] = 'Empty'
+
         ## Switch to ranking
         game.menu.pack_forget()
         game.rank.pack(**game.EXPAND)
@@ -330,14 +352,14 @@ class Game:
         game.millenium_falcon = Game.MilleniumFalcon(game)
     
         ## Create TIE Fighters
-        game.fighters = []
+        game.fighters = Group()
 
         ## Create Asteroids
-        game.rocks = []
+        game.rocks = Group()
 
         ## Create Lasers
-        game.pro_lasers = []
-        game.con_lasers = []
+        game.pro_lasers = Group()
+        game.con_lasers = Group()
 
     def create_stars(game):
         game.stars = [game.create_star() for _ in range(game.STARS)]
@@ -369,10 +391,14 @@ class Game:
             game.update_move()
             game.update_text()
 
-            game.update_make()
+            game.update_add()
 
             game.tick = (game.tick + 1) % 1024
             return True
+
+    def update_add(game):
+        if random.random() > (1 / game.lvl):
+            ...
 
     def oval_coords(game, key):
         x1, y1, x2, y2 = game.canvas.coords(key)
@@ -414,11 +440,21 @@ class Game:
         game.record.place(relx=0.5, rely=0.5)
         game.record_answer.focus()
 
+    @staticmethod
+    def format_scores(scores):
+        lines = ["{:>20s} {:>6s}    {:>10s} {:>8s}        ".format("Name", "Score", "Day", "Time"),'']
+        for name, score, date in scores:
+            lines.append("{:>20s} {:6d}    {:%m/%d/%Y %H:%M:%S}        ".format(name, score, date))
+        return "\n".join(lines)
+
     def load_score(game):
         """
         """
-        with open(game.SCORE_FILE, 'rb') as file:
-            return pickle.load(file)
+        try:
+            with open(game.SCORE_FILE, 'rb') as file:
+                return pickle.load(file)
+        except FileNotFoundError:
+            return []
         
     def save_score(game, name, score):
         """
@@ -477,7 +513,6 @@ class Game:
     @property
     def score(game):
         return int(round(game.time * game.points))
-        ...
 
     @property
     def score_list(game):
@@ -486,10 +521,9 @@ class Game:
     @property
     def objects(game):
         yield game.millenium_falcon
-        for group in (game.lasers, game.fighters, game.rocks):
+        for group in (game.pro_lasers, game.con_lasers, game.fighters, game.rocks):
             for item in group:
                 yield item
 
-    
 if  __name__ == '__main__':
     Game()

@@ -1,7 +1,10 @@
 import datetime as dt
 import _thread as thread
+
 import tkinter as tk
+from tkinter import ttk
 from tkinter.font import Font, nametofont
+
 import numpy as np
 
 from math import pi, sin, cos, e, sqrt, floor, ceil
@@ -212,14 +215,22 @@ class Group(set):
 
     __binds__ = []
 
-    def __init__(self, buffer):
-        set.__init__(self, buffer)
+    def __init__(self, buffer=None):
+        set.__init__(self, buffer if buffer is not None else [])
 
     @classmethod
-    def bind(A, B, action):
+    def bind(cls, A, B, action):
         """ Add Action for collision.
         """
-        ...
+        cls.__binds__.append((A, B, action))
+
+    @classmethod
+    def collide(cls):
+        for A, B, action in cls.__binds__:
+            for a in A:
+                for b in B:
+                    if (a & b):
+                        action((a,b), (A, B))
 
 class GIF(list):
     
