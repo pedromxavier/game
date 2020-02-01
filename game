@@ -478,11 +478,12 @@ class Game:
     ## ===================== ##
 
     def p_shot(game, event):
-        game.btn_shot = True
+        if game.shot_cooldown:
+            game.millenium_falcon.shot()
+            game.shot_cooldown = False
         
     def r_shot(game, event):
-        game.btn_shot = False
-        game.btn_shot_cooldown = True
+        game.shot_cooldown = True
         
     def p_up(game, event):
         game.btn_up = True
