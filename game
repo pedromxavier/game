@@ -547,9 +547,11 @@ class ConLaser(Laser):
 class Rock(GameObject):
 
     def dxdy(obj, game, x, y):
-        ...
+        if not (0 <= x + obj.dx <= game.W and 0 <= y + obj.dy <= game.H):
+            return None
+        return obj.dx, obj.dy
     
-    
+
 
 class MilleniumFalcon(GameObject):
 

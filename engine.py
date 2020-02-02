@@ -135,13 +135,16 @@ class BaseObject(object):
 
         ## Object got out of the screen or something...
         if dxdy is None:
-            obj.erase()
+            obj._erase()
         else:
             obj.game.canvas.move(obj.key, *dxdy)
 
-    def erase(obj):
+    def _erase(obj):
         obj.game.canvas.delete(obj.key)
         obj.cls.group.remove(obj)
+
+    def erase(obj):
+        obj._erase()
         obj.boom(game)
         
     @property
