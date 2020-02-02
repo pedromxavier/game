@@ -484,7 +484,7 @@ class Fighter(GameObject):
 
     img = Game.images['fighter']
 
-    V = 5
+    v = 5
 
     def dxdy(obj, game, x, y):
         if not (0 <= y + obj.dy <= game.H):
@@ -560,10 +560,20 @@ class Rock(GameObject):
 
     @classmethod
     def spawn(cls):
-        x = random.random() * cls.game.W
+        x = random.randint(0, cls.game.W)
         y = 0
-        dx = 
-        cls()
+        v = (0.2 + 0.8 * random.random()) * cls.V
+        dx = random.randint(-7, 7)
+        dy = int((v * v - dx * dx) ** .5)
+        cls(x, y, dx, dy)
+        
+class Rock1(Rock):
+
+    img = Game.images['rock1']
+
+class Rock2(Rock):
+
+    img = Game.images['rock2']
 
 
 class MilleniumFalcon(GameObject):
