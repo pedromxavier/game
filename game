@@ -519,7 +519,7 @@ class Laser(GameObject):
     dx = 0
 
     def dxdy(obj, game, x, y):
-        if not(0 <= x <= game.W and 0 <= y <= game.H):
+        if not(0 <= x + obj.dx <= game.W and 0 <= y + obj.dy <= game.H):
             obj.erase()
         else:
             return obj.dx, obj.dy
@@ -546,11 +546,24 @@ class ConLaser(Laser):
 
 class Rock(GameObject):
 
+    V = 10
+
     def dxdy(obj, game, x, y):
         if not (0 <= x + obj.dx <= game.W and 0 <= y + obj.dy <= game.H):
             return None
         return obj.dx, obj.dy
     
+    def __init__(obj, x, y, dx, dy):
+        obj.dx = dx
+        obj.dy = dy
+        GameObject.__init__(x, y, obj.dxdy)
+
+    @classmethod
+    def spawn(cls):
+        x = random.random() * cls.game.W
+        y = 0
+        dx = 
+        cls()
 
 
 class MilleniumFalcon(GameObject):
