@@ -102,8 +102,11 @@ class BaseObject(object):
         img : PIL.Image object
         x, y : int
         dxdy : func (game, x, y) -> dx, dy
-        boom : func
+        boom : func (game, x, y) -> None
     """
+
+    group = None
+
     def __init__(obj, game, img, x, y, dxdy = None, boom = None):
         obj.game = game
 
@@ -122,18 +125,28 @@ class BaseObject(object):
         obj.dxdy = dxdy if dxdy is not None else obj.__dxdy
         obj.boom = boom if boom is not None else obj.__boom
 
+    def __hash__(obj):
+        return obj.key
+
     def __dxdy(obj, game, x, y):
         return 0, 0
 
-    def __boom(obj, game):
+    def __boom(obj, game, x, y):
         return
 
     def move(obj):
-        obj.game.canvas.move(obj.key, *obj.dxdy(obj.game, *obj.xy))
+        dxdy = obj.dxdy(obj.game, *obj.xy)
+
+        ## Object got out of the screen or something...
+        if dxdy is None:
+            obj.erase()
+        else:
+            obj.game.canvas.move(obj.key, *)
 
     def erase(obj):
-        obj.boom(game)
         obj.game.canvas.delete(obj.key)
+        obj.group.remove(obj)
+        obj.boom(game)
         
     @property
     def xy(obj):
@@ -146,6 +159,14 @@ class BaseObject(object):
     @property
     def y(obj):
         return obj.xy[1]
+
+    @classmethod
+    def init_group(cls):
+        cls.group = []
+
+    @property
+    def cls(obj):
+        return obj.__class__
 
 class GameObject(BaseObject):
     """ Used to define a game object, such as spacecraft or meteors.
@@ -226,11 +247,12 @@ class Group(set):
 
     @classmethod
     def collide(cls):
+        """ This could be smarter. But it isn't
+        """
         for A, B, action in cls.__binds__:
             for a in A:
                 for b in B:
-                    if (a & b):
-                        action((a,b), (A, B))
+                    if (a & b): action(a, b)
 
 class GIF(list):
     

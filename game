@@ -240,10 +240,30 @@ class Game:
 
             return TieFighter(game)
 
+    class Laser(GameObject):
+
+        dx = 0
+
+        def dxdy(obj, game, x, y):
+            if not(0 <= x <= game.W and 0 <= y <= game.H):
+                obj.erase()
+            else:
+                return obj.dx, obj.dy
+
+        def __init__(obj, game, x, y, dy):
+            """ dy is either 1 (TIE) or -1 (REBEL)
+            """
+            img = game.images['laser']
+            obj.dy = dy
+            GameObject.__init__(obj, game, img, x, y, obj.dxdy)
+
     class MilleniumFalcon(GameObject):
 
         dx = 7
         dy = 9
+
+        def boom(obj, game, x, y):
+            game.gifs['explosion'].play(x, y)
 
         def dxdy(obj, game, x, y):
             dx, dy = 0, 0
@@ -262,11 +282,11 @@ class Game:
         def __init__(obj, game):
             img = game.images['millenium_falcon']
             x, y = game.W_2, int(game.H * 0.8)
-            GameObject.__init__(obj, game, img, x, y, obj.dxdy)
+            GameObject.__init__(obj, game, img, x, y, obj.dxdy, obj.boom)
 
         def shot(obj):
             if obj.game.btn_shot_cooldown:
-                laser = Laser(obj.game, *obj.xy)
+                laser = Game.Laser(obj.game, *obj.xy)
                 obj.game.pro_lasers.append(laser)
 
     def menu_play_func(game, event):
@@ -523,8 +543,7 @@ class Game:
     def objects(game):
         yield game.millenium_falcon
         for group in (game.pro_lasers, game.con_lasers, game.fighters, game.rocks):
-            for item in group:
-                yield item
+            yield from group
 
 if  __name__ == '__main__':
-    Game()
+    game = Game()
