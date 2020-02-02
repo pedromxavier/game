@@ -105,21 +105,17 @@ class BaseObject(object):
         boom : func (game, x, y) -> None
     """
 
+    img = None
+
+    map = None
+
+    game = None
+
     group = None
 
-    def __init__(obj, game, img, x, y, dxdy = None, boom = None):
-        obj.game = game
+    was_init = False
 
-        ## Object Image
-        obj.img = img
-        obj.shape = img.size
-
-        obj.w, obj.h = obj.shape
-
-        obj.w_2 = obj.w // 2
-        obj.h_2 = obj.h // 2
-
-        obj.tkimg = ImageTk.PhotoImage(obj.img)
+    def __init__(obj, x, y, dxdy = None, boom = None):
         obj.key = obj.game.canvas.create_image(x, y, image=obj.tkimg)
 
         obj.dxdy = dxdy if dxdy is not None else obj.__dxdy
@@ -141,11 +137,11 @@ class BaseObject(object):
         if dxdy is None:
             obj.erase()
         else:
-            obj.game.canvas.move(obj.key, *)
+            obj.game.canvas.move(obj.key, *dxdy)
 
     def erase(obj):
         obj.game.canvas.delete(obj.key)
-        obj.group.remove(obj)
+        obj.cls.group.remove(obj)
         obj.boom(game)
         
     @property
@@ -161,8 +157,34 @@ class BaseObject(object):
         return obj.xy[1]
 
     @classmethod
+    def init(cls, game):
+        cls.game = game
+        cls.init_img()
+        cls.init_group()
+
+        cls.was_init = True
+
+        return cls.group
+
+    @classmethod
     def init_group(cls):
-        cls.group = []
+        cls.group = Group()
+
+    @classmethod
+    def init_img(cls):
+        cls.shape = img.size
+
+        cls.w, cls.h = obj.shape
+
+        cls.w_2 = cls.w // 2
+        cls.h_2 = cls.h // 2
+
+        ## Tkinter Image
+        cls.tkimg = ImageTk.PhotoImage(cls.img)
+        
+        ## Image Map
+        array = np.array(img.convert("RGBA"))
+        cls.map = np.array(array[:,:,3], dtype=np.bool)
 
     @property
     def cls(obj):
@@ -177,16 +199,8 @@ class GameObject(BaseObject):
         boom : func
     """
 
-    def __init__(obj, game, img, x, y, dxdy = None, boom = None):
-        BaseObject.__init__(obj, game, img, x, y, dxdy, boom)
-
-        obj.map = GameObject.make_map(obj.img)
-
-    @staticmethod
-    def make_map(img):
-        array = np.array(img.convert("RGBA"))
-        img_map = np.array(array[:,:,3], dtype=np.bool)
-        return img_map
+    def __init__(obj, x, y, dxdy = None, boom = None):
+        BaseObject.__init__(obj, x, y, dxdy, boom)
 
     @staticmethod
     def box_intersection(A, B):

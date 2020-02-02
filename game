@@ -30,6 +30,14 @@ class Game:
 
     star_dy = 3
 
+    images = {
+            'millenium_falcon' : Image.open('data/millenium_falcon.gif'),
+            'fighter' : Image.open('data/fighter.gif'),
+            'laser' : Image.open('data/laser.gif'),
+            'rock1' : Image.open('data/rock1.gif'),
+            'rock2' : Image.open('data/rock2.gif'),
+    }
+
     class NameEntry(ttk.Entry):
         def __init__(self, *args, **kwargs):
             ttk.Entry.__init__(self, *args, **kwargs)
@@ -115,12 +123,6 @@ class Game:
 
         game.canvas = tk.Canvas(game.game, width=game.W, height=game.H, bg=game.BG)
         game.canvas.pack(**game.EXPAND)
-
-        game.images = {
-            'millenium_falcon' : Image.open('data/millenium_falcon.gif'),
-            'fighter' : Image.open('data/fighter.gif'),
-            'laser' : Image.open('data/laser.gif'),
-        }
 
         game.gifs = {
             'explosion' : GIF(game, r'data/Explosion%d.gif', 1, 7),
@@ -220,75 +222,6 @@ class Game:
 
         game.root.mainloop()
 
-    class TieFighter(GameObject):
-
-        V = 5
-
-        def __init__(obj, game, x, y):
-            obj.game = game
-            obj.dx = random.randint(2, 4)
-            obj.dy = int((obj.v * obj.v - obj.dx * obj.dx) ** .5)
-
-        @property
-        def v(obj):
-            return obj.V * obj.game.lvl
-
-
-        @staticmethod
-        def spawn(game):
-            x, y = random.randint(0, game.W), 0
-
-            return TieFighter(game)
-
-    class Laser(GameObject):
-
-        dx = 0
-
-        def dxdy(obj, game, x, y):
-            if not(0 <= x <= game.W and 0 <= y <= game.H):
-                obj.erase()
-            else:
-                return obj.dx, obj.dy
-
-        def __init__(obj, game, x, y, dy):
-            """ dy is either 1 (TIE) or -1 (REBEL)
-            """
-            img = game.images['laser']
-            obj.dy = dy
-            GameObject.__init__(obj, game, img, x, y, obj.dxdy)
-
-    class MilleniumFalcon(GameObject):
-
-        dx = 7
-        dy = 9
-
-        def boom(obj, game, x, y):
-            game.gifs['explosion'].play(x, y)
-
-        def dxdy(obj, game, x, y):
-            dx, dy = 0, 0
-            if game.btn_down:
-                dy += obj.dy
-            if game.btn_up:
-                dy -= obj.dy
-            if game.btn_left:
-                dx -= obj.dx
-            if game.btn_right:
-                dx += obj.dx
-            dx = min(max(game.x + obj.w_2, x + dx), game.X - obj.w_2) - x
-            dy = min(max(game.y + obj.h_2, y + dy), game.Y - obj.h_2) - y
-            return dx, dy
-
-        def __init__(obj, game):
-            img = game.images['millenium_falcon']
-            x, y = game.W_2, int(game.H * 0.8)
-            GameObject.__init__(obj, game, img, x, y, obj.dxdy, obj.boom)
-
-        def shot(obj):
-            if obj.game.btn_shot_cooldown:
-                laser = Game.Laser(obj.game, *obj.xy)
-                obj.game.pro_lasers.append(laser)
-
     def menu_play_func(game, event):
         ## Switch from Menu to Canvas
         game.menu.pack_forget()
@@ -369,17 +302,19 @@ class Game:
         game.create_stars()
 
         ## Create Millenium Falcon
-        game.millenium_falcon = Game.MilleniumFalcon(game)
+        MilleniumFalcon.init(game)
+        game.millenium_falcon = MilleniumFalcon()
     
         ## Create TIE Fighters
-        game.fighters = Group()
+        game.fighters = Fighter.init(game)
 
         ## Create Asteroids
-        game.rocks = Group()
+        game.rocks_1 = Game.Rock1.init(game)
+        game.rocks_2 = Game.Rock2.init(game)
 
         ## Create Lasers
-        game.pro_lasers = Group()
-        game.con_lasers = Group()
+        game.pro_lasers = Game.ProLaser.init(game)
+        game.con_lasers = Game.ConLaser.init(game)
 
     def create_stars(game):
         game.stars = [game.create_star() for _ in range(game.STARS)]
@@ -544,6 +479,108 @@ class Game:
         yield game.millenium_falcon
         for group in (game.pro_lasers, game.con_lasers, game.fighters, game.rocks):
             yield from group
+
+class Fighter(GameObject):
+
+    img = Game.images['fighter']
+
+    V = 5
+
+    def dxdy(obj, game, x, y):
+        if not (0 <= y + obj.dy <= game.H):
+            return None
+        if random.random() <= 0.05: ## 5.0%
+            obj.dx = -obj.dx
+        if not (0 <= x + obj.dx <= game.W):
+            obj.dx = -obj.dx
+        return obj.dx, obj.dy
+
+    def boom(obj, game, x, y):
+        game.gifs['explosion'].play(x, y)
+
+    def __init__(obj, x, y):
+        obj.dx = random.randint(2, 4)
+        obj.dy = int((obj.v * obj.v - obj.dx * obj.dx) ** .5)
+        GameObject(obj, x, y, obj.dxdy, obj.boom)
+
+    @property
+    def v(obj):
+        return obj.V * obj.game.lvl
+
+    @classmethod
+    def spawn(cls):
+        x, y = random.randint(0, game.W), 0
+        cls(x, y)
+
+class Laser(GameObject):
+
+    img = Game.images['laser']
+
+    dx = 0
+
+    def dxdy(obj, game, x, y):
+        if not(0 <= x <= game.W and 0 <= y <= game.H):
+            obj.erase()
+        else:
+            return obj.dx, obj.dy
+
+    def __init__(obj, game, x, y, dy):
+        """ dy is either 1 (TIE) or -1 (REBEL)
+        """
+        obj.dy = dy
+        GameObject.__init__(obj, x, y, obj.dxdy)
+
+class ProLaser(Laser):
+
+    dy = -15
+
+    def __init__(obj, x, y):
+        Laser.__init__(obj, x, y, ProLaser.dy)
+
+class ConLaser(Laser):
+
+    dy = 15
+
+    def __init__(obj, x, y):
+        Laser.__init__(obj, x, y, ConLaser.dy)
+
+class Rock(GameObject):
+
+    def dxdy(obj, game, x, y):
+        ...
+    
+    
+
+class MilleniumFalcon(GameObject):
+
+    img = Game.images['millenium_falcon']
+
+    dx = 7
+    dy = 9
+
+    def boom(obj, game, x, y):
+        game.gifs['explosion'].play(x, y)
+
+    def dxdy(obj, game, x, y):
+        dx, dy = 0, 0
+        if game.btn_down:
+            dy += obj.dy
+        if game.btn_up:
+            dy -= obj.dy
+        if game.btn_left:
+            dx -= obj.dx
+        if game.btn_right:
+            dx += obj.dx
+        dx = min(max(game.x + obj.w_2, x + dx), game.X - obj.w_2) - x
+        dy = min(max(game.y + obj.h_2, y + dy), game.Y - obj.h_2) - y
+        return dx, dy
+
+    def __init__(obj):
+        x, y = Game.W_2, int(Game.H * 0.8)
+        GameObject.__init__(obj, x, y, obj.dxdy, obj.boom)
+
+    def shot(obj):
+        Game.ProLaser(obj.cls.game, *obj.xy, -15)
 
 if  __name__ == '__main__':
     game = Game()
