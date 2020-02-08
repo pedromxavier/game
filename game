@@ -154,7 +154,7 @@ class Game:
         game.root.bind("<KeyRelease-space>", game.r_shot) #
                                                           #
         game.btn_shot = False                             #
-        game.btn_shot_cooldown = True                     #
+        game.shot_cooldown = True                         #
         #=================================================#
 
 
@@ -170,6 +170,8 @@ class Game:
 
         game.pro_lasers = None
         game.con_lasers = None
+
+        game.garbage = None
 
         game.lvl = None
 
@@ -298,23 +300,35 @@ class Game:
     def create(game):
         """ Creates all game objects.
         """
+        ## Create Garbage
+        game.garbage = deque([])
+
         ## Create Stars
         game.create_stars()
 
         ## Create Millenium Falcon
-        MilleniumFalcon.init(game)
+        game.falcons = MilleniumFalcon.init(game)
         game.millenium_falcon = MilleniumFalcon()
     
         ## Create TIE Fighters
         game.fighters = Fighter.init(game)
 
         ## Create Asteroids
-        game.rocks_1 = Game.Rock1.init(game)
-        game.rocks_2 = Game.Rock2.init(game)
+        game.rocks = Group.mesh(Rock1.init(game), Rock2.init(game))
 
         ## Create Lasers
-        game.pro_lasers = Game.ProLaser.init(game)
-        game.con_lasers = Game.ConLaser.init(game)
+        game.pro_lasers = ProLaser.init(game)
+        game.con_lasers = ConLaser.init(game)
+
+        ## Setup collision groups
+        Group.bind(game.pro_lasers, game.rocks, game.act_laser_void)
+
+    def act_laser_boom(game, laser, obj):
+        laser.erase()
+        obj.erase()
+
+    def act_laser_void(game, laser, obj):
+        laser.erase()
 
     def create_stars(game):
         game.stars = [game.create_star() for _ in range(game.STARS)]
@@ -337,23 +351,41 @@ class Game:
 
         return game.canvas.create_oval(x-r, y-r, x+r, y+r, fill=color, outline=color)
         
-
     def update(game):
         if game.paused:
             return True
         else:
+            game.update_clear()
+
             game.update_star()
             game.update_move()
             game.update_text()
 
             game.update_add()
 
+            game.update_collide()
+
             game.tick = (game.tick + 1) % 1024
             return True
 
+    def update_collide(game):
+        Group.collide()
+
     def update_add(game):
-        if random.random() > (1 / game.lvl):
-            ...
+        if random.random() <= 0.01:
+            Fighter.spawn()
+        if random.random() <= 0.01:
+            if random.random() <= 0.5:
+                Rock1.spawn()
+            else:
+                Rock2.spawn() 
+
+    def update_clear(game):
+        while game.garbage:
+            obj = game.garbage.pop()
+            obj.clear()
+
+            del obj
 
     def oval_coords(game, key):
         x1, y1, x2, y2 = game.canvas.coords(key)
@@ -471,14 +503,15 @@ class Game:
         return int(round(game.time * game.points))
 
     @property
-    def score_list(game):
-        ...
-
-    @property
     def objects(game):
         yield game.millenium_falcon
         for group in (game.pro_lasers, game.con_lasers, game.fighters, game.rocks):
             yield from group
+
+    @classmethod
+    def inside(cls, obj):
+        x, y = obj.xy
+        return (-obj.w_2 <= x <= cls.W + obj.w_2) and (-obj.h_2 <= y <= cls.H + obj.h_2)
 
 class Fighter(GameObject):
 
@@ -487,29 +520,25 @@ class Fighter(GameObject):
     v = 5
 
     def dxdy(obj, game, x, y):
-        if not (0 <= y + obj.dy <= game.H):
+        if not (-obj.h_2 <= y + obj.dy <= obj.game.H + obj.h_2):
             return None
         if random.random() <= 0.05: ## 5.0%
             obj.dx = -obj.dx
-        if not (0 <= x + obj.dx <= game.W):
+        if not (0 <= x + obj.dx <= obj.game.W):
             obj.dx = -obj.dx
         return obj.dx, obj.dy
 
     def boom(obj, game, x, y):
-        game.gifs['explosion'].play(x, y)
+        obj.game.gifs['explosion'].play(x, y)
 
     def __init__(obj, x, y):
         obj.dx = random.randint(2, 4)
         obj.dy = int((obj.v * obj.v - obj.dx * obj.dx) ** .5)
-        GameObject(obj, x, y, obj.dxdy, obj.boom)
-
-    @property
-    def v(obj):
-        return obj.V * obj.game.lvl
+        GameObject.__init__(obj, x, y, obj.dxdy, obj.boom)
 
     @classmethod
     def spawn(cls):
-        x, y = random.randint(0, game.W), 0
+        x, y = random.randint(0, cls.game.W), 0
         cls(x, y)
 
 class Laser(GameObject):
@@ -519,12 +548,12 @@ class Laser(GameObject):
     dx = 0
 
     def dxdy(obj, game, x, y):
-        if not(0 <= x + obj.dx <= game.W and 0 <= y + obj.dy <= game.H):
-            obj.erase()
+        if not obj.game.inside(obj):
+            return None
         else:
             return obj.dx, obj.dy
 
-    def __init__(obj, game, x, y, dy):
+    def __init__(obj, x, y, dy):
         """ dy is either 1 (TIE) or -1 (REBEL)
         """
         obj.dy = dy
@@ -546,25 +575,31 @@ class ConLaser(Laser):
 
 class Rock(GameObject):
 
-    V = 10
+    v = 10
 
     def dxdy(obj, game, x, y):
-        if not (0 <= x + obj.dx <= game.W and 0 <= y + obj.dy <= game.H):
+        if not obj.game.inside(obj):
             return None
         return obj.dx, obj.dy
     
     def __init__(obj, x, y, dx, dy):
         obj.dx = dx
         obj.dy = dy
-        GameObject.__init__(x, y, obj.dxdy)
+        GameObject.__init__(obj, x, y, obj.dxdy)
 
     @classmethod
     def spawn(cls):
         x = random.randint(0, cls.game.W)
         y = 0
-        v = (0.2 + 0.8 * random.random()) * cls.V
-        dx = random.randint(-7, 7)
-        dy = int((v * v - dx * dx) ** .5)
+
+        dy = random.uniform( 0, 2)
+        dx = random.uniform(-1, 1)
+
+        A = ((dx * dx + dy * dy) ** 0.5) / cls.v
+
+        dx /= A
+        dy /= A
+
         cls(x, y, dx, dy)
         
 class Rock1(Rock):
@@ -574,7 +609,6 @@ class Rock1(Rock):
 class Rock2(Rock):
 
     img = Game.images['rock2']
-
 
 class MilleniumFalcon(GameObject):
 
@@ -601,11 +635,11 @@ class MilleniumFalcon(GameObject):
         return dx, dy
 
     def __init__(obj):
-        x, y = Game.W_2, int(Game.H * 0.8)
+        x, y = obj.game.W_2, int(obj.game.H * 0.8)
         GameObject.__init__(obj, x, y, obj.dxdy, obj.boom)
 
     def shot(obj):
-        Game.ProLaser(obj.cls.game, *obj.xy, -15)
+        ProLaser(*obj.xy)
 
 if  __name__ == '__main__':
     game = Game()

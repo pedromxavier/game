@@ -7,7 +7,7 @@ from tkinter.font import Font, nametofont
 
 import numpy as np
 
-from math import pi, sin, cos, e, sqrt, floor, ceil
+from collections import deque
 
 from time import perf_counter as clock
 from time import sleep
@@ -116,10 +116,15 @@ class BaseObject(object):
     was_init = False
 
     def __init__(obj, x, y, dxdy = None, boom = None):
+        if not obj.was_init:
+            raise ValueError("You must initialize this class first.")
+
         obj.key = obj.game.canvas.create_image(x, y, image=obj.tkimg)
 
         obj.dxdy = dxdy if dxdy is not None else obj.__dxdy
         obj.boom = boom if boom is not None else obj.__boom
+
+        obj.cls.group.add(obj)
 
     def __hash__(obj):
         return obj.key
@@ -140,12 +145,15 @@ class BaseObject(object):
             obj.game.canvas.move(obj.key, *dxdy)
 
     def _erase(obj):
-        obj.game.canvas.delete(obj.key)
-        obj.cls.group.remove(obj)
+        obj.game.garbage.appendleft(obj)
 
     def erase(obj):
+        obj.boom(obj.game, *obj.xy)
         obj._erase()
-        obj.boom(game)
+
+    def clear(obj):
+        obj.game.canvas.delete(obj.key)
+        obj.cls.group.discard(obj)
         
     @property
     def xy(obj):
@@ -171,13 +179,16 @@ class BaseObject(object):
 
     @classmethod
     def init_group(cls):
-        cls.group = Group()
+        if cls.group is None:
+            cls.group = Group()
+
+            cls.group.cls = cls
 
     @classmethod
     def init_img(cls):
-        cls.shape = img.size
+        cls.shape = cls.img.size
 
-        cls.w, cls.h = obj.shape
+        cls.w, cls.h = cls.shape
 
         cls.w_2 = cls.w // 2
         cls.h_2 = cls.h // 2
@@ -186,7 +197,7 @@ class BaseObject(object):
         cls.tkimg = ImageTk.PhotoImage(cls.img)
         
         ## Image Map
-        array = np.array(img.convert("RGBA"))
+        array = np.array(cls.img.convert("RGBA"))
         cls.map = np.array(array[:,:,3], dtype=np.bool)
 
     @property
@@ -227,7 +238,7 @@ class GameObject(BaseObject):
     def shadow(A, C_box):
         ax, ay, aX, aY = A.box
         cx, cy, cX, cY = C_box
-        return A.map[cx-ax:cX-aX, cy-ay:cY-aY]
+        return A.map[cy-ay:cY-aY][cx-ax:cX-aX]
 
     def __and__(A, B):
         C_box = GameObject.box_intersection(A, B)
@@ -237,7 +248,9 @@ class GameObject(BaseObject):
         else:
             cx, cy, cX, cY = C_box
             AS, BS = A.shadow(C_box), B.shadow(C_box)
-            assert AS.shape == BS.shape
+            if AS.shape != BS.shape:
+                print(AS.shape, BS.shape)
+                raise AssertionError
             return np.any(AS & BS)
     
     @property
@@ -253,8 +266,17 @@ class Group(set):
 
     __binds__ = []
 
+    cls = None
+
     def __init__(self, buffer=None):
         set.__init__(self, buffer if buffer is not None else [])
+
+    @classmethod
+    def mesh(cls, A, B):
+        group = cls(A | B)
+        A.cls.group = group
+        B.cls.group = group
+        return group
 
     @classmethod
     def bind(cls, A, B, action):
