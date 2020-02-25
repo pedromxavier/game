@@ -230,7 +230,7 @@ class GameObject(BaseObject):
         cy = max(ay, by)
         cY = min(aY, bY)
 
-        if cx > cX or cy > cY :
+        if cx >= cX or cy >= cY :
             return None
         else:
             return (cx, cy, cX, cY)
@@ -238,7 +238,8 @@ class GameObject(BaseObject):
     def shadow(A, C_box):
         ax, ay, aX, aY = A.box
         cx, cy, cX, cY = C_box
-        return A.map[cy-ay:cY-aY][cx-ax:cX-aX]
+
+        return A.map[(cy-ay):(cY-ay)][(cx-ax):(cX-ax)]
 
     def __and__(A, B):
         C_box = GameObject.box_intersection(A, B)
@@ -249,7 +250,6 @@ class GameObject(BaseObject):
             cx, cy, cX, cY = C_box
             AS, BS = A.shadow(C_box), B.shadow(C_box)
             if AS.shape != BS.shape:
-                print(AS.shape, BS.shape)
                 raise AssertionError
             return np.any(AS & BS)
     
